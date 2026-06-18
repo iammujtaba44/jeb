@@ -15,24 +15,26 @@ class JebApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsCubit, SettingsState>(
-      buildWhen: (SettingsState p, SettingsState c) =>
-          p.settings.themeMode != c.settings.themeMode,
+      buildWhen: (SettingsState p, SettingsState c) => p.settings.themeMode != c.settings.themeMode,
       builder: (BuildContext context, SettingsState state) {
-        return MaterialApp(
-          title: AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: _toThemeMode(state.settings.themeMode),
-          home: const AppLockGate(child: MainShell()),
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: _toThemeMode(state.settings.themeMode),
+            home: const AppLockGate(child: MainShell()),
+          ),
         );
       },
     );
   }
 
   ThemeMode _toThemeMode(AppThemeMode mode) => switch (mode) {
-        AppThemeMode.system => ThemeMode.system,
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-      };
+    AppThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+  };
 }

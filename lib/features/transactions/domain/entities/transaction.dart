@@ -12,6 +12,7 @@ class Transaction extends Equatable {
     required this.date,
     required this.type,
     this.note,
+    this.recurringId,
   });
 
   final String id;
@@ -22,6 +23,12 @@ class Transaction extends Equatable {
   final TransactionType type;
   final String? note;
 
+  /// The id of the recurring rule that generated this transaction, or null for
+  /// a one-off transaction.
+  final String? recurringId;
+
+  bool get isRecurring => recurringId != null;
+
   @override
   List<Object?> get props => [
         id,
@@ -31,5 +38,6 @@ class Transaction extends Equatable {
         date,
         type,
         note,
+        recurringId,
       ];
 }

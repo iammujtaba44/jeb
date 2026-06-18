@@ -8,6 +8,12 @@ import 'package:jeb/features/budgets/domain/usecases/get_budgets.dart';
 import 'package:jeb/features/budgets/domain/usecases/remove_budget.dart';
 import 'package:jeb/features/budgets/domain/usecases/set_budget.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
+import 'package:jeb/features/recurring/data/datasources/recurring_local_datasource.dart';
+import 'package:jeb/features/recurring/data/repositories/recurring_repository_impl.dart';
+import 'package:jeb/features/recurring/domain/repositories/recurring_repository.dart';
+import 'package:jeb/features/recurring/domain/usecases/delete_recurring_transaction.dart';
+import 'package:jeb/features/recurring/domain/usecases/materialize_due_transactions.dart';
+import 'package:jeb/features/recurring/domain/usecases/save_recurring_transaction.dart';
 import 'package:jeb/features/settings/data/datasources/settings_local_datasource.dart';
 import 'package:jeb/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:jeb/features/settings/domain/repositories/settings_repository.dart';
@@ -105,6 +111,24 @@ Future<void> configureDependencies() async {
       () => RemoveBudget(getIt<BudgetRepository>()),
     );
 
+  // ── Recurring transactions feature ───────────────────────────────────
+  getIt
+    ..registerLazySingleton<RecurringLocalDataSource>(
+      () => RecurringLocalDataSourceImpl(getIt<AppDatabase>(), getIt<Uuid>()),
+    )
+    ..registerLazySingleton<RecurringRepository>(
+      () => RecurringRepositoryImpl(getIt<RecurringLocalDataSource>()),
+    )
+    ..registerLazySingleton<SaveRecurringTransaction>(
+      () => SaveRecurringTransaction(getIt<RecurringRepository>()),
+    )
+    ..registerLazySingleton<DeleteRecurringTransaction>(
+      () => DeleteRecurringTransaction(getIt<RecurringRepository>()),
+    )
+    ..registerLazySingleton<MaterializeDueTransactions>(
+      () => MaterializeDueTransactions(getIt<RecurringRepository>()),
+    );
+
   // ── Domain: use cases ────────────────────────────────────────────────
   getIt
     ..registerLazySingleton<GetTransactionsForMonth>(
@@ -143,6 +167,7 @@ Future<void> configureDependencies() async {
         getSettings: getIt<GetSettings>(),
         addTransaction: getIt<AddTransaction>(),
         getBudgets: getIt<GetBudgets>(),
+        materializeDueTransactions: getIt<MaterializeDueTransactions>(),
       ),
     )
     ..registerFactory<BudgetsCubit>(
@@ -169,6 +194,8 @@ Future<void> configureDependencies() async {
     ..registerFactory<AddTransactionCubit>(
       () => AddTransactionCubit(
         addTransaction: getIt<AddTransaction>(),
+        saveRecurringTransaction: getIt<SaveRecurringTransaction>(),
+        deleteRecurringTransaction: getIt<DeleteRecurringTransaction>(),
         uuid: getIt<Uuid>(),
       ),
     )

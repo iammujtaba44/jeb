@@ -20,6 +20,8 @@ abstract final class DateFormatter {
 
   static String monthYear(DateTime date) => DateFormat.yMMMM().format(date);
 
+  static String fullDate(DateTime date) => DateFormat.yMMMMd().format(date);
+
   static String dateTime(DateTime date) =>
       DateFormat.MMMd().add_jm().format(date);
 }

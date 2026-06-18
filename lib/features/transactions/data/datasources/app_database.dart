@@ -28,12 +28,22 @@ final class AppDatabase {
     await db.execute(_createTransactionsTableSql);
     await db.execute(_createCategoriesTableSql);
     await db.execute(_createBudgetsTableSql);
+    await db.execute(_createRecurringTransactionsTableSql);
     await _seedCategories(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute(_createBudgetsTableSql);
+    }
+    if (oldVersion < 3) {
+      await db.execute(_createRecurringTransactionsTableSql);
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        'ALTER TABLE ${DbConstants.transactionsTable} '
+        'ADD COLUMN ${DbConstants.columnRecurringId} TEXT',
+      );
     }
   }
 
@@ -54,6 +64,7 @@ final class AppDatabase {
       '${DbConstants.columnNote} TEXT, '
       '${DbConstants.columnDate} INTEGER NOT NULL, '
       '${DbConstants.columnType} TEXT NOT NULL, '
+      '${DbConstants.columnRecurringId} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';
@@ -73,6 +84,22 @@ final class AppDatabase {
       'CREATE TABLE ${DbConstants.budgetsTable} ('
       '${DbConstants.columnId} TEXT PRIMARY KEY, '
       '${DbConstants.columnLimitAmount} REAL NOT NULL, '
+      '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
+      '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
+      ')';
+
+  static const String _createRecurringTransactionsTableSql =
+      'CREATE TABLE ${DbConstants.recurringTransactionsTable} ('
+      '${DbConstants.columnId} TEXT PRIMARY KEY, '
+      '${DbConstants.columnAmount} REAL NOT NULL, '
+      '${DbConstants.columnCurrencyCode} TEXT NOT NULL, '
+      '${DbConstants.columnCategoryId} TEXT NOT NULL, '
+      '${DbConstants.columnNote} TEXT, '
+      '${DbConstants.columnType} TEXT NOT NULL, '
+      '${DbConstants.columnFrequency} TEXT NOT NULL, '
+      '${DbConstants.columnStartDate} INTEGER NOT NULL, '
+      '${DbConstants.columnNextDueDate} INTEGER NOT NULL, '
+      '${DbConstants.columnEndDate} INTEGER, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

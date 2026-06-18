@@ -5,6 +5,7 @@ import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction_type.dart';
 import 'package:jeb/features/transactions/presentation/widgets/category_avatar.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// A single row in the transaction list. Swipe to delete.
 class TransactionListItem extends StatelessWidget {
@@ -41,7 +42,24 @@ class TransactionListItem extends StatelessWidget {
         leading: category == null
             ? const Icon(Icons.help_outline)
             : CategoryAvatar(category: category!),
-        title: Text(category?.name ?? 'Uncategorized'),
+        title: Row(
+          children: <Widget>[
+            Flexible(
+              child: Text(
+                category?.name ?? 'Uncategorized',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (transaction.isRecurring) ...<Widget>[
+              const SizedBox(width: 6),
+              Icon(
+                PhosphorIcons.arrowsClockwise(PhosphorIconsStyle.bold),
+                size: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ],
+        ),
         subtitle: Text(subtitle),
         trailing: Text(
           '$sign${MoneyFormatter.format(transaction.amount, transaction.currencyCode)}',

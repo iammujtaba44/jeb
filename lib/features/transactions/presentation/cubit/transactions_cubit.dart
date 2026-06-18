@@ -5,6 +5,7 @@ import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/features/budgets/domain/entities/budget.dart';
 import 'package:jeb/features/budgets/domain/usecases/get_budgets.dart';
+import 'package:jeb/features/recurring/domain/usecases/materialize_due_transactions.dart';
 import 'package:jeb/features/settings/domain/usecases/get_settings.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
@@ -28,6 +29,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     required GetSettings getSettings,
     required AddTransaction addTransaction,
     required GetBudgets getBudgets,
+    required MaterializeDueTransactions materializeDueTransactions,
   })  : _getTransactionsForMonth = getTransactionsForMonth,
         _getCategories = getCategories,
         _deleteTransaction = deleteTransaction,
@@ -35,6 +37,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
         _getSettings = getSettings,
         _addTransaction = addTransaction,
         _getBudgets = getBudgets,
+        _materializeDueTransactions = materializeDueTransactions,
         super(const TransactionsInitial());
 
   final GetTransactionsForMonth _getTransactionsForMonth;
@@ -44,6 +47,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   final GetSettings _getSettings;
   final AddTransaction _addTransaction;
   final GetBudgets _getBudgets;
+  final MaterializeDueTransactions _materializeDueTransactions;
 
   DateTime _month = _firstOfThisMonth();
   String _homeCurrency = AppConstants.defaultCurrencyCode;
@@ -65,6 +69,9 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     );
     if (syncEnabled) await _syncData(const NoParams());
 
+    // Generate any recurring transactions that have come due since last open.
+    await _materializeDueTransactions(DateTime.now());
+
     final budgetsResult = await _getBudgets(const NoParams());
     budgetsResult.fold((_) {}, (List<Budget> budgets) {
       _overallBudget = null;
@@ -81,7 +88,12 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     await _refreshFromCache();
   }
 
-  Future<void> refresh() => _refreshFromCache();
+  Future<void> refresh() async {
+    // Idempotent: only generates occurrences that have newly come due, so a
+    // rule added elsewhere shows up as soon as the user returns to Home.
+    await _materializeDueTransactions(DateTime.now());
+    await _refreshFromCache();
+  }
 
   Future<void> deleteTransaction(String id) async {
     final result = await _deleteTransaction(id);
