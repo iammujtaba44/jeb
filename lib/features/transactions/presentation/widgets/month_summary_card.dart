@@ -81,6 +81,15 @@ class MonthSummaryCard extends StatelessWidget {
               ),
             ],
           ),
+          if (income > 0) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            _SavingsTile(
+              income: income,
+              expense: expense,
+              balance: balance,
+              currencyCode: currencyCode,
+            ),
+          ],
           if (budgetLimit != null) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
             Divider(height: 1, color: scheme.onPrimary.withValues(alpha: 0.18)),
@@ -91,6 +100,71 @@ class MonthSummaryCard extends StatelessWidget {
               currencyCode: currencyCode,
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Highlights how much of this month's income was kept — the savings rate
+/// plus the saved amount — flipping to an "overspent" state when expenses
+/// exceed income. Only shown when there is income to measure against.
+class _SavingsTile extends StatelessWidget {
+  const _SavingsTile({
+    required this.income,
+    required this.expense,
+    required this.balance,
+    required this.currencyCode,
+  });
+
+  final double income;
+  final double expense;
+  final double balance;
+  final String currencyCode;
+
+  static const Color _red = Color(0xFFFCA5A5);
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final Color onPrimary = scheme.onPrimary;
+
+    final bool saving = balance >= 0;
+    final int rate = ((balance.abs() / income) * 100).round();
+    final String label =
+        saving ? 'Saved $rate% of income' : 'Overspent by $rate% of income';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: onPrimary.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            saving ? Icons.savings_outlined : Icons.warning_amber_rounded,
+            size: 20,
+            color: saving ? onPrimary : _red,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: textTheme.bodyMedium?.copyWith(
+                color: onPrimary.withValues(alpha: 0.95),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            '${saving ? '' : '-'}${MoneyFormatter.format(balance.abs(), currencyCode)}',
+            style: textTheme.titleMedium?.copyWith(
+              color: saving ? onPrimary : _red,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
