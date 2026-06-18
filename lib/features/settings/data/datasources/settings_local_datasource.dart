@@ -17,6 +17,8 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   static const String _keyTheme = 'settings.theme_mode';
   static const String _keySync = 'settings.sync_enabled';
   static const String _keyAppLock = 'settings.app_lock_enabled';
+  static const String _keyReminderEnabled = 'settings.reminder_enabled';
+  static const String _keyReminderMinutes = 'settings.reminder_minutes';
   static const String _keyLastSynced = 'settings.last_synced_at';
 
   @override
@@ -30,6 +32,10 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
         syncEnabled: _prefs.getBool(_keySync) ?? AppSettings.defaults.syncEnabled,
         appLockEnabled: _prefs.getBool(_keyAppLock) ??
             AppSettings.defaults.appLockEnabled,
+        reminderEnabled: _prefs.getBool(_keyReminderEnabled) ??
+            AppSettings.defaults.reminderEnabled,
+        reminderMinutes: _prefs.getInt(_keyReminderMinutes) ??
+            AppSettings.defaults.reminderMinutes,
         lastSyncedAt:
             lastMs == null ? null : DateTime.fromMillisecondsSinceEpoch(lastMs),
       );
@@ -45,6 +51,8 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
       await _prefs.setString(_keyTheme, settings.themeMode.storageValue);
       await _prefs.setBool(_keySync, settings.syncEnabled);
       await _prefs.setBool(_keyAppLock, settings.appLockEnabled);
+      await _prefs.setBool(_keyReminderEnabled, settings.reminderEnabled);
+      await _prefs.setInt(_keyReminderMinutes, settings.reminderMinutes);
       final DateTime? lastSynced = settings.lastSyncedAt;
       if (lastSynced != null) {
         await _prefs.setInt(_keyLastSynced, lastSynced.millisecondsSinceEpoch);

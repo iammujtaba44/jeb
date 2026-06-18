@@ -18,6 +18,7 @@ abstract class _Accent {
   static const Color backup = Color(0xFF0D9488); // teal
   static const Color lock = Color(0xFFF59E0B); // amber
   static const Color privacy = Color(0xFF059669); // emerald
+  static const Color reminder = Color(0xFFE11D48); // rose
 }
 
 class SettingsPage extends StatelessWidget {
@@ -43,6 +44,19 @@ class SettingsPage extends StatelessWidget {
                   ),
                   const _TileDivider(),
                   _ThemeTile(mode: state.settings.themeMode),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const _SectionLabel('Reminders'),
+              _SettingsCard(
+                children: <Widget>[
+                  _ReminderToggleTile(
+                    enabled: state.settings.reminderEnabled,
+                  ),
+                  if (state.settings.reminderEnabled) ...<Widget>[
+                    const _TileDivider(),
+                    _ReminderTimeTile(minutes: state.settings.reminderMinutes),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -273,6 +287,58 @@ class _ThemeTile extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ReminderToggleTile extends StatelessWidget {
+  const _ReminderToggleTile({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: enabled,
+      onChanged: context.read<SettingsCubit>().setReminderEnabled,
+      secondary: IconBadge(
+        icon: PhosphorIcons.bellRinging(PhosphorIconsStyle.duotone),
+        color: _Accent.reminder,
+      ),
+      title: const Text(
+        'Daily reminder',
+        style: TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: const Text('A nudge to log your spending each day'),
+    );
+  }
+}
+
+class _ReminderTimeTile extends StatelessWidget {
+  const _ReminderTimeTile({required this.minutes});
+
+  final int minutes;
+
+  @override
+  Widget build(BuildContext context) {
+    final TimeOfDay time =
+        TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+    return _SettingsTile(
+      icon: PhosphorIcons.clock(PhosphorIconsStyle.duotone),
+      tint: _Accent.reminder,
+      title: 'Time',
+      subtitle: time.format(context),
+      trailing: const _Chevron(),
+      onTap: () => _pickTime(context, time),
+    );
+  }
+
+  Future<void> _pickTime(BuildContext context, TimeOfDay initial) async {
+    final SettingsCubit cubit = context.read<SettingsCubit>();
+    final TimeOfDay? picked =
+        await showTimePicker(context: context, initialTime: initial);
+    if (picked != null) {
+      cubit.setReminderMinutes(picked.hour * 60 + picked.minute);
+    }
   }
 }
 

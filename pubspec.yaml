@@ -57,6 +57,11 @@ dependencies:
   # Biometric app lock
   local_auth: ^2.3.0
 
+  # Local notifications (daily spending reminder)
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+
   # Iconography (Phosphor — regular/fill weights for nav bar)
   phosphor_flutter: ^2.1.0
 

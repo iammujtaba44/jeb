@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/features/settings/domain/entities/app_settings.dart';
 import 'package:jeb/features/settings/domain/entities/app_theme_mode.dart';
@@ -16,20 +17,32 @@ class SettingsCubit extends Cubit<SettingsState> {
     required GetSettings getSettings,
     required SaveSettings saveSettings,
     required SyncData syncData,
+    required NotificationService notifications,
   })  : _getSettings = getSettings,
         _saveSettings = saveSettings,
         _syncData = syncData,
+        _notifications = notifications,
         super(const SettingsState(settings: AppSettings.defaults));
 
   final GetSettings _getSettings;
   final SaveSettings _saveSettings;
   final SyncData _syncData;
+  final NotificationService _notifications;
 
   Future<void> load() async {
     final result = await _getSettings(const NoParams());
-    result.fold(
-      (_) {},
-      (AppSettings settings) => emit(state.copyWith(settings: settings)),
+    await result.fold(
+      (_) async {},
+      (AppSettings settings) async {
+        emit(state.copyWith(settings: settings));
+        // Re-arm the reminder on launch (survives reboots / OS clearing it).
+        if (settings.reminderEnabled) {
+          await _notifications.scheduleDailyReminder(
+            settings.reminderHour,
+            settings.reminderMinute,
+          );
+        }
+      },
     );
   }
 
@@ -44,6 +57,31 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   Future<void> setAppLock(bool enabled) =>
       _persist(state.settings.copyWith(appLockEnabled: enabled));
+
+  /// Turns the daily reminder on/off, requesting OS permission when enabling.
+  Future<void> setReminderEnabled(bool enabled) async {
+    await _persist(state.settings.copyWith(reminderEnabled: enabled));
+    if (enabled) {
+      await _notifications.requestPermission();
+      await _notifications.scheduleDailyReminder(
+        state.settings.reminderHour,
+        state.settings.reminderMinute,
+      );
+    } else {
+      await _notifications.cancelReminder();
+    }
+  }
+
+  /// Updates the reminder time (minutes since midnight) and reschedules.
+  Future<void> setReminderMinutes(int minutes) async {
+    await _persist(state.settings.copyWith(reminderMinutes: minutes));
+    if (state.settings.reminderEnabled) {
+      await _notifications.scheduleDailyReminder(
+        state.settings.reminderHour,
+        state.settings.reminderMinute,
+      );
+    }
+  }
 
   Future<void> _persist(AppSettings settings) async {
     emit(state.copyWith(settings: settings));

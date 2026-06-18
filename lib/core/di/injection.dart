@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
+import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/features/budgets/data/datasources/budget_local_datasource.dart';
 import 'package:jeb/features/budgets/data/repositories/budget_repository_impl.dart';
 import 'package:jeb/features/budgets/domain/repositories/budget_repository.dart';
@@ -51,6 +53,12 @@ Future<void> configureDependencies() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
   getIt.registerLazySingleton<Uuid>(Uuid.new);
+  getIt.registerLazySingleton<FlutterLocalNotificationsPlugin>(
+    FlutterLocalNotificationsPlugin.new,
+  );
+  getIt.registerLazySingleton<NotificationService>(
+    () => NotificationService(getIt<FlutterLocalNotificationsPlugin>()),
+  );
 
   // ── Data: database & sources ─────────────────────────────────────────
   getIt.registerLazySingleton<AppDatabase>(AppDatabase.new);
@@ -204,6 +212,7 @@ Future<void> configureDependencies() async {
         getSettings: getIt<GetSettings>(),
         saveSettings: getIt<SaveSettings>(),
         syncData: getIt<SyncData>(),
+        notifications: getIt<NotificationService>(),
       ),
     );
 }

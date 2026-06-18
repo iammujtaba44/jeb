@@ -9,6 +9,8 @@ class AppSettings extends Equatable {
     required this.themeMode,
     required this.syncEnabled,
     this.appLockEnabled = false,
+    this.reminderEnabled = false,
+    this.reminderMinutes = 20 * 60, // 20:00
     this.lastSyncedAt,
   });
 
@@ -16,7 +18,17 @@ class AppSettings extends Equatable {
   final AppThemeMode themeMode;
   final bool syncEnabled;
   final bool appLockEnabled;
+
+  /// Whether the daily "log your spending" reminder is on.
+  final bool reminderEnabled;
+
+  /// Time of the daily reminder, as minutes since midnight (local time).
+  final int reminderMinutes;
+
   final DateTime? lastSyncedAt;
+
+  int get reminderHour => reminderMinutes ~/ 60;
+  int get reminderMinute => reminderMinutes % 60;
 
   static const AppSettings defaults = AppSettings(
     defaultCurrencyCode: AppConstants.defaultCurrencyCode,
@@ -29,6 +41,8 @@ class AppSettings extends Equatable {
     AppThemeMode? themeMode,
     bool? syncEnabled,
     bool? appLockEnabled,
+    bool? reminderEnabled,
+    int? reminderMinutes,
     DateTime? lastSyncedAt,
   }) {
     return AppSettings(
@@ -36,6 +50,8 @@ class AppSettings extends Equatable {
       themeMode: themeMode ?? this.themeMode,
       syncEnabled: syncEnabled ?? this.syncEnabled,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
@@ -46,6 +62,8 @@ class AppSettings extends Equatable {
         themeMode,
         syncEnabled,
         appLockEnabled,
+        reminderEnabled,
+        reminderMinutes,
         lastSyncedAt,
       ];
 }
