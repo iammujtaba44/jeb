@@ -9,6 +9,7 @@ import 'package:jeb/features/transactions/presentation/widgets/amount_currency_f
 import 'package:jeb/features/transactions/presentation/widgets/category_selector.dart';
 import 'package:jeb/features/transactions/presentation/widgets/date_picker_tile.dart';
 import 'package:jeb/features/transactions/presentation/widgets/note_input_field.dart';
+import 'package:jeb/features/transactions/presentation/widgets/receipt_section.dart';
 import 'package:jeb/features/transactions/presentation/widgets/repeat_section.dart';
 import 'package:jeb/features/transactions/presentation/widgets/save_transaction_button.dart';
 import 'package:jeb/features/transactions/presentation/widgets/transaction_type_selector.dart';
@@ -98,6 +99,8 @@ class AddTransactionView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             const RepeatSection(),
+            const SizedBox(height: AppSpacing.lg),
+            const ReceiptSection(),
             const SizedBox(height: AppSpacing.xl),
             const SaveTransactionButton(),
             const SizedBox(height: AppSpacing.md),

@@ -13,6 +13,7 @@ class Transaction extends Equatable {
     required this.type,
     this.note,
     this.recurringId,
+    this.receiptPath,
   });
 
   final String id;
@@ -27,7 +28,12 @@ class Transaction extends Equatable {
   /// a one-off transaction.
   final String? recurringId;
 
+  /// Relative path of an attached receipt photo (within the documents dir),
+  /// or null if none.
+  final String? receiptPath;
+
   bool get isRecurring => recurringId != null;
+  bool get hasReceipt => receiptPath != null;
 
   @override
   List<Object?> get props => [
@@ -39,5 +45,6 @@ class Transaction extends Equatable {
         type,
         note,
         recurringId,
+        receiptPath,
       ];
 }

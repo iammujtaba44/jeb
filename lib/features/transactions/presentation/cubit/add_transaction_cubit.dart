@@ -49,6 +49,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
         currencyCode: existing.currencyCode,
         editingId: existing.id,
         recurringId: existing.recurringId,
+        receiptPath: existing.receiptPath,
       ),
     );
   }
@@ -79,6 +80,11 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
             ? state.copyWith(clearEndDate: true)
             : state.copyWith(endDate: endDate),
       );
+
+  void receiptAttached(String relativePath) =>
+      emit(state.copyWith(receiptPath: relativePath));
+
+  void receiptRemoved() => emit(state.copyWith(clearReceipt: true));
 
   Future<void> submit() async {
     if (!state.canSubmit || state.isSubmitting) return;
@@ -126,6 +132,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
         type: state.type,
         note: state.note.trim().isEmpty ? null : state.note.trim(),
         recurringId: state.recurringId,
+        receiptPath: state.receiptPath,
       );
 
   RecurringTransaction _buildRule() {

@@ -62,6 +62,9 @@ dependencies:
   timezone: ^0.9.4
   flutter_timezone: ^3.0.1
 
+  # Receipt photos (camera / gallery)
+  image_picker: ^1.1.2
+
   # Iconography (Phosphor — regular/fill weights for nav bar)
   phosphor_flutter: ^2.1.0
 

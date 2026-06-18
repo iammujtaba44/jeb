@@ -4,6 +4,10 @@
 	<dict>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Jeb uses Face ID to unlock your private finances.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Jeb uses the camera to attach receipt photos to your transactions.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Jeb lets you attach receipt photos from your library to your transactions.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

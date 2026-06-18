@@ -45,6 +45,12 @@ final class AppDatabase {
         'ADD COLUMN ${DbConstants.columnRecurringId} TEXT',
       );
     }
+    if (oldVersion < 5) {
+      await db.execute(
+        'ALTER TABLE ${DbConstants.transactionsTable} '
+        'ADD COLUMN ${DbConstants.columnReceiptPath} TEXT',
+      );
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
@@ -65,6 +71,7 @@ final class AppDatabase {
       '${DbConstants.columnDate} INTEGER NOT NULL, '
       '${DbConstants.columnType} TEXT NOT NULL, '
       '${DbConstants.columnRecurringId} TEXT, '
+      '${DbConstants.columnReceiptPath} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

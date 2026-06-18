@@ -58,6 +58,14 @@ class TransactionListItem extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
+            if (transaction.hasReceipt) ...<Widget>[
+              const SizedBox(width: 6),
+              Icon(
+                PhosphorIcons.paperclip(PhosphorIconsStyle.bold),
+                size: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
           ],
         ),
         subtitle: Text(subtitle),
