@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:jeb/core/constants/db_constants.dart';
+import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/budgets/data/datasources/budget_local_datasource.dart';
 import 'package:jeb/features/budgets/data/models/budget_model.dart';
 import 'package:jeb/features/recurring/data/datasources/recurring_local_datasource.dart';
 import 'package:jeb/features/recurring/data/models/recurring_transaction_model.dart';
+import 'package:jeb/features/settings/data/datasources/settings_local_datasource.dart';
+import 'package:jeb/features/settings/domain/entities/app_settings.dart';
 import 'package:jeb/features/transactions/data/datasources/cloud_file_store.dart';
 import 'package:jeb/features/transactions/data/datasources/transaction_local_datasource.dart';
 import 'package:jeb/features/transactions/data/models/category_model.dart';
@@ -12,27 +17,35 @@ import 'package:jeb/features/transactions/data/sync/sync_snapshot.dart';
 
 /// Two-way sync: pull the remote snapshot, merge newer records into the local
 /// store (last-write-wins), then push the merged snapshot back. Covers
-/// transactions, categories, budgets, and recurring rules.
+/// transactions, categories, budgets, recurring rules, and preferences, and
+/// syncs receipt photo files alongside.
 class SyncEngine {
   const SyncEngine({
     required TransactionLocalDataSource local,
     required BudgetLocalDataSource budgets,
     required RecurringLocalDataSource recurring,
+    required SettingsLocalDataSource settings,
+    required ReceiptStore receipts,
     required CloudFileStore cloudFileStore,
   })  : _local = local,
         _budgets = budgets,
         _recurring = recurring,
+        _settings = settings,
+        _receipts = receipts,
         _cloudFileStore = cloudFileStore;
 
   final TransactionLocalDataSource _local;
   final BudgetLocalDataSource _budgets;
   final RecurringLocalDataSource _recurring;
+  final SettingsLocalDataSource _settings;
+  final ReceiptStore _receipts;
   final CloudFileStore _cloudFileStore;
 
   Future<void> sync() async {
     final SyncSnapshot remote = await _readRemote();
     await _applyRemote(remote);
     await _pushMerged();
+    await _syncReceiptFiles();
   }
 
   Future<SyncSnapshot> _readRemote() async {
@@ -84,6 +97,17 @@ class SyncEngine {
     for (final RecurringTransactionModel model in recurringToApply) {
       await _recurring.putRecurring(model);
     }
+
+    await _applySettings(remote.settings);
+  }
+
+  /// Last-write-wins for preferences, keeping this device's [lastSyncedAt].
+  Future<void> _applySettings(AppSettings? remote) async {
+    if (remote == null) return;
+    final AppSettings local = await _settings.read();
+    if (remote.updatedAtMs > local.updatedAtMs) {
+      await _settings.write(remote.copyWith(lastSyncedAt: local.lastSyncedAt));
+    }
   }
 
   Future<void> _pushMerged() async {
@@ -92,8 +116,43 @@ class SyncEngine {
       categories: await _local.getAllCategoriesForSync(),
       budgets: await _budgets.getAllBudgetsForSync(),
       recurring: await _recurring.getAllRecurringForSync(),
+      settings: await _settings.read(),
     );
     await _cloudFileStore.writeSnapshot(merged.toJson());
+  }
+
+  /// Uploads receipt photos missing remotely and downloads any missing locally.
+  /// Best-effort: a failed transfer never blocks the data sync.
+  Future<void> _syncReceiptFiles() async {
+    try {
+      await _receipts.init();
+      final List<TransactionModel> all =
+          await _local.getAllTransactionsForSync();
+      final Set<String> withReceipts = <String>{
+        for (final TransactionModel t in all)
+          if (!t.isDeleted && t.receiptPath != null) t.receiptPath!,
+      };
+      if (withReceipts.isEmpty) return;
+
+      final Set<String> cloudFiles =
+          (await _cloudFileStore.listFiles()).toSet();
+
+      for (final String relative in withReceipts) {
+        final String localPath = _receipts.absolutePath(relative);
+        final bool localExists = File(localPath).existsSync();
+        try {
+          if (localExists && !cloudFiles.contains(relative)) {
+            await _cloudFileStore.uploadFile(localPath, relative);
+          } else if (!localExists && cloudFiles.contains(relative)) {
+            await _cloudFileStore.downloadFile(relative, localPath);
+          }
+        } catch (_) {
+          // Skip this receipt; continue with the rest.
+        }
+      }
+    } catch (_) {
+      // Receipt sync is best-effort.
+    }
   }
 
   /// Stable sync id for a budget (the overall budget uses a sentinel key).

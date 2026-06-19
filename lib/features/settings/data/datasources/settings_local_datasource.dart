@@ -20,12 +20,17 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   static const String _keyReminderEnabled = 'settings.reminder_enabled';
   static const String _keyReminderMinutes = 'settings.reminder_minutes';
   static const String _keyLastSynced = 'settings.last_synced_at';
+  static const String _keyUpdatedAt = 'settings.updated_at';
 
   @override
   Future<AppSettings> read() async {
     try {
       final int? lastMs = _prefs.getInt(_keyLastSynced);
+      final int? updatedMs = _prefs.getInt(_keyUpdatedAt);
       return AppSettings(
+        updatedAt: updatedMs == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(updatedMs),
         defaultCurrencyCode: _prefs.getString(_keyCurrency) ??
             AppSettings.defaults.defaultCurrencyCode,
         themeMode: AppThemeMode.fromStorage(_prefs.getString(_keyTheme)),
@@ -56,6 +61,10 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
       final DateTime? lastSynced = settings.lastSyncedAt;
       if (lastSynced != null) {
         await _prefs.setInt(_keyLastSynced, lastSynced.millisecondsSinceEpoch);
+      }
+      final DateTime? updatedAt = settings.updatedAt;
+      if (updatedAt != null) {
+        await _prefs.setInt(_keyUpdatedAt, updatedAt.millisecondsSinceEpoch);
       }
     } catch (error) {
       throw CacheException('Failed to save settings: $error');

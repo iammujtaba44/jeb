@@ -2,12 +2,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jeb/features/budgets/data/models/budget_model.dart';
 import 'package:jeb/features/recurring/data/models/recurring_transaction_model.dart';
 import 'package:jeb/features/recurring/domain/entities/recurrence_frequency.dart';
+import 'package:jeb/features/settings/domain/entities/app_settings.dart';
+import 'package:jeb/features/settings/domain/entities/app_theme_mode.dart';
 import 'package:jeb/features/transactions/data/models/transaction_model.dart';
 import 'package:jeb/features/transactions/data/sync/sync_snapshot.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction_type.dart';
 
 void main() {
   group('SyncSnapshot', () {
+    test('round-trips preferences (and drops device-only lastSyncedAt)', () {
+      final SyncSnapshot snap = SyncSnapshot(
+        transactions: const [],
+        categories: const [],
+        settings: AppSettings(
+          defaultCurrencyCode: 'USD',
+          themeMode: AppThemeMode.dark,
+          syncEnabled: true,
+          appLockEnabled: true,
+          reminderEnabled: true,
+          reminderMinutes: 9 * 60,
+          lastSyncedAt: DateTime(2026, 6, 1),
+          updatedAt: DateTime(2026, 6, 2),
+        ),
+      );
+
+      final SyncSnapshot back = SyncSnapshot.fromJson(snap.toJson());
+      final AppSettings? s = back.settings;
+
+      expect(s, isNotNull);
+      expect(s!.defaultCurrencyCode, 'USD');
+      expect(s.themeMode, AppThemeMode.dark);
+      expect(s.appLockEnabled, isTrue);
+      expect(s.reminderEnabled, isTrue);
+      expect(s.reminderMinutes, 9 * 60);
+      expect(s.updatedAt, DateTime(2026, 6, 2));
+      expect(s.lastSyncedAt, isNull); // device-specific, not synced
+    });
+
+    test('settings is null when the snapshot has none', () {
+      final SyncSnapshot back = SyncSnapshot.fromJson(
+        const SyncSnapshot(transactions: [], categories: []).toJson(),
+      );
+      expect(back.settings, isNull);
+    });
     test('round-trips budgets and recurring rules through JSON', () {
       final SyncSnapshot snap = SyncSnapshot(
         transactions: <TransactionModel>[

@@ -80,6 +80,8 @@ Future<void> configureDependencies() async {
       local: getIt<TransactionLocalDataSource>(),
       budgets: getIt<BudgetLocalDataSource>(),
       recurring: getIt<RecurringLocalDataSource>(),
+      settings: getIt<SettingsLocalDataSource>(),
+      receipts: getIt<ReceiptStore>(),
       cloudFileStore: getIt<CloudFileStore>(),
     ),
   );

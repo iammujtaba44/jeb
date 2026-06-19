@@ -62,6 +62,38 @@ final class ICloudFileStore implements CloudFileStore {
     );
   }
 
+  @override
+  Future<List<String>> listFiles() async {
+    final List<ICloudFile> files =
+        await ICloudStorage.gather(containerId: _containerId);
+    return files.map((ICloudFile f) => f.relativePath).toList();
+  }
+
+  @override
+  Future<void> uploadFile(String localPath, String relativePath) async {
+    await _awaitTransfer(
+      (void Function(Stream<double>) onProgress) => ICloudStorage.upload(
+        containerId: _containerId,
+        filePath: localPath,
+        destinationRelativePath: relativePath,
+        onProgress: onProgress,
+      ),
+    );
+  }
+
+  @override
+  Future<bool> downloadFile(String relativePath, String localDestPath) async {
+    await _awaitTransfer(
+      (void Function(Stream<double>) onProgress) => ICloudStorage.download(
+        containerId: _containerId,
+        relativePath: relativePath,
+        destinationFilePath: localDestPath,
+        onProgress: onProgress,
+      ),
+    );
+    return File(localDestPath).exists();
+  }
+
   /// iCloud transfer APIs return before the transfer finishes; this resolves
   /// once the progress stream closes (or after [_transferTimeout]).
   Future<void> _awaitTransfer(

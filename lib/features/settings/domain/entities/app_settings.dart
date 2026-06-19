@@ -12,6 +12,7 @@ class AppSettings extends Equatable {
     this.reminderEnabled = false,
     this.reminderMinutes = 20 * 60, // 20:00
     this.lastSyncedAt,
+    this.updatedAt,
   });
 
   final String defaultCurrencyCode;
@@ -27,8 +28,14 @@ class AppSettings extends Equatable {
 
   final DateTime? lastSyncedAt;
 
+  /// When the preferences last changed — used for last-write-wins sync.
+  /// Null is treated as the epoch (oldest).
+  final DateTime? updatedAt;
+
   int get reminderHour => reminderMinutes ~/ 60;
   int get reminderMinute => reminderMinutes % 60;
+
+  int get updatedAtMs => updatedAt?.millisecondsSinceEpoch ?? 0;
 
   static const AppSettings defaults = AppSettings(
     defaultCurrencyCode: AppConstants.defaultCurrencyCode,
@@ -44,6 +51,7 @@ class AppSettings extends Equatable {
     bool? reminderEnabled,
     int? reminderMinutes,
     DateTime? lastSyncedAt,
+    DateTime? updatedAt,
   }) {
     return AppSettings(
       defaultCurrencyCode: defaultCurrencyCode ?? this.defaultCurrencyCode,
@@ -53,6 +61,7 @@ class AppSettings extends Equatable {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -65,5 +74,6 @@ class AppSettings extends Equatable {
         reminderEnabled,
         reminderMinutes,
         lastSyncedAt,
+        updatedAt,
       ];
 }

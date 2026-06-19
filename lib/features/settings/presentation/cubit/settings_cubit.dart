@@ -84,8 +84,10 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   Future<void> _persist(AppSettings settings) async {
-    emit(state.copyWith(settings: settings));
-    await _saveSettings(settings);
+    // Stamp the change time so last-write-wins sync can order preferences.
+    final AppSettings stamped = settings.copyWith(updatedAt: DateTime.now());
+    emit(state.copyWith(settings: stamped));
+    await _saveSettings(stamped);
   }
 
   Future<void> backupNow() async {
