@@ -65,6 +65,11 @@ dependencies:
   # Receipt photos (camera / gallery)
   image_picker: ^1.1.2
 
+  # Export & share (CSV / PDF)
+  share_plus: ^10.1.4
+  pdf: ^3.11.1
+  printing: ^5.13.4
+
   # Iconography (Phosphor — regular/fill weights for nav bar)
   phosphor_flutter: ^2.1.0
 

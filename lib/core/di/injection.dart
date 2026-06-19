@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
+import 'package:jeb/core/services/export_service.dart';
 import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/budgets/data/datasources/budget_local_datasource.dart';
@@ -64,6 +65,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ReceiptStore>(
     () => ReceiptStore(getIt<Uuid>()),
   );
+  getIt.registerLazySingleton<ExportService>(ExportService.new);
 
   // ── Data: database & sources ─────────────────────────────────────────
   getIt.registerLazySingleton<AppDatabase>(AppDatabase.new);

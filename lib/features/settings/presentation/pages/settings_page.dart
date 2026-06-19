@@ -6,6 +6,7 @@ import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/currency_picker_sheet.dart';
 import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/settings/domain/entities/app_theme_mode.dart';
+import 'package:jeb/features/settings/presentation/widgets/export_sheet.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -19,6 +20,7 @@ abstract class _Accent {
   static const Color lock = Color(0xFFF59E0B); // amber
   static const Color privacy = Color(0xFF059669); // emerald
   static const Color reminder = Color(0xFFE11D48); // rose
+  static const Color export = Color(0xFF0891B2); // cyan
 }
 
 class SettingsPage extends StatelessWidget {
@@ -68,6 +70,23 @@ class SettingsPage extends StatelessWidget {
                     const _TileDivider(),
                     _BackupNowTile(state: state),
                   ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const _SectionLabel('Data'),
+              _SettingsCard(
+                children: <Widget>[
+                  _SettingsTile(
+                    icon: PhosphorIcons.export(PhosphorIconsStyle.duotone),
+                    tint: _Accent.export,
+                    title: 'Export transactions',
+                    subtitle: 'Share a CSV or PDF for any range',
+                    trailing: const _Chevron(),
+                    onTap: () => showExportSheet(
+                      context,
+                      currency: state.settings.defaultCurrencyCode,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
