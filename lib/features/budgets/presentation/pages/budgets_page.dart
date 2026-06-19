@@ -7,7 +7,6 @@ import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
-import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/presentation/widgets/category_avatar.dart';
 
@@ -28,9 +27,6 @@ class BudgetsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String currency =
-        context.read<SettingsCubit>().state.settings.defaultCurrencyCode;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Budgets')),
       body: BlocBuilder<BudgetsCubit, BudgetsState>(
@@ -38,6 +34,7 @@ class BudgetsView extends StatelessWidget {
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
+          final String currency = state.currency;
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: <Widget>[
@@ -45,6 +42,7 @@ class BudgetsView extends StatelessWidget {
               Card(
                 child: _OverallBudgetTile(
                   limit: state.overallLimit,
+                  spent: state.totalSpent,
                   currency: currency,
                 ),
               ),
@@ -59,6 +57,7 @@ class BudgetsView extends StatelessWidget {
                       _CategoryBudgetTile(
                         category: state.categories[i],
                         limit: state.categoryLimits[state.categories[i].id],
+                        spent: state.spentFor(state.categories[i].id),
                         currency: currency,
                       ),
                     ],
@@ -101,23 +100,24 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _OverallBudgetTile extends StatelessWidget {
-  const _OverallBudgetTile({required this.limit, required this.currency});
+  const _OverallBudgetTile({
+    required this.limit,
+    required this.spent,
+    required this.currency,
+  });
 
   final double? limit;
+  final double spent;
   final String currency;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return _BudgetRow(
       leading: const IconBadge(icon: Icons.account_balance_wallet_outlined),
-      title: const Text(
-        'Monthly budget',
-        style: TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        limit == null ? 'Not set' : MoneyFormatter.format(limit!, currency),
-      ),
-      trailing: const Icon(Icons.chevron_right),
+      title: 'Monthly budget',
+      spent: spent,
+      limit: limit,
+      currency: currency,
       onTap: () async {
         final double? result = await showBudgetDialog(
           context,
@@ -137,25 +137,23 @@ class _CategoryBudgetTile extends StatelessWidget {
   const _CategoryBudgetTile({
     required this.category,
     required this.limit,
+    required this.spent,
     required this.currency,
   });
 
   final Category category;
   final double? limit;
+  final double spent;
   final String currency;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return _BudgetRow(
       leading: CategoryAvatar(category: category, radius: 18),
-      title: Text(
-        category.name,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-      subtitle: Text(
-        limit == null ? 'Not set' : MoneyFormatter.format(limit!, currency),
-      ),
-      trailing: const Icon(Icons.chevron_right),
+      title: category.name,
+      spent: spent,
+      limit: limit,
+      currency: currency,
       onTap: () async {
         final double? result = await showBudgetDialog(
           context,
@@ -167,6 +165,143 @@ class _CategoryBudgetTile extends StatelessWidget {
           context.read<BudgetsCubit>().setCategory(category.id, result);
         }
       },
+    );
+  }
+}
+
+/// A budget list row: shows a progress bar + over/under when a [limit] is set,
+/// or just the amount spent this month when it isn't.
+class _BudgetRow extends StatelessWidget {
+  const _BudgetRow({
+    required this.leading,
+    required this.title,
+    required this.spent,
+    required this.limit,
+    required this.currency,
+    required this.onTap,
+  });
+
+  final Widget leading;
+  final String title;
+  final double spent;
+  final double? limit;
+  final String currency;
+  final VoidCallback onTap;
+
+  static const Color _amber = Color(0xFFF59E0B);
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final double? lim = limit;
+    final bool budgeted = lim != null && lim > 0;
+
+    final double ratio = budgeted ? spent / lim : 0;
+    final bool over = budgeted && spent > lim;
+    final Color color =
+        over ? scheme.error : (ratio >= 0.8 ? _amber : scheme.primary);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                leading,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (over)
+                  _Pill(label: 'Exceeded', color: scheme.error)
+                else if (budgeted)
+                  Text(
+                    '${(ratio * 100).round()}%',
+                    style: textTheme.labelLarge?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                else
+                  Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (budgeted) ...<Widget>[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                child: LinearProgressIndicator(
+                  value: ratio.clamp(0.0, 1.0),
+                  color: color,
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                over
+                    ? 'Over by ${MoneyFormatter.format(spent - lim, currency)} · '
+                        '${MoneyFormatter.format(spent, currency)} of '
+                        '${MoneyFormatter.format(lim, currency)}'
+                    : '${MoneyFormatter.format(spent, currency)} of '
+                        '${MoneyFormatter.format(lim, currency)} · '
+                        '${MoneyFormatter.format(lim - spent, currency)} left',
+                style: textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ] else
+              Text(
+                spent > 0
+                    ? 'Spent ${MoneyFormatter.format(spent, currency)} this month · tap to set a budget'
+                    : 'No budget · tap to set one',
+                style: textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
     );
   }
 }

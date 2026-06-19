@@ -190,6 +190,8 @@ Future<void> configureDependencies() async {
         setBudget: getIt<SetBudget>(),
         removeBudget: getIt<RemoveBudget>(),
         getCategories: getIt<GetCategories>(),
+        getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
+        getSettings: getIt<GetSettings>(),
       ),
     )
     ..registerFactory<CategoriesCubit>(
