@@ -11,6 +11,7 @@ import 'package:jeb/features/budgets/domain/usecases/get_budgets.dart';
 import 'package:jeb/features/budgets/domain/usecases/remove_budget.dart';
 import 'package:jeb/features/budgets/domain/usecases/set_budget.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
+import 'package:jeb/features/insights/presentation/cubit/insights_cubit.dart';
 import 'package:jeb/features/recurring/data/datasources/recurring_local_datasource.dart';
 import 'package:jeb/features/recurring/data/repositories/recurring_repository_impl.dart';
 import 'package:jeb/features/recurring/domain/repositories/recurring_repository.dart';
@@ -191,6 +192,13 @@ Future<void> configureDependencies() async {
         removeBudget: getIt<RemoveBudget>(),
         getCategories: getIt<GetCategories>(),
         getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
+        getSettings: getIt<GetSettings>(),
+      ),
+    )
+    ..registerFactory<InsightsCubit>(
+      () => InsightsCubit(
+        getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
+        getCategories: getIt<GetCategories>(),
         getSettings: getIt<GetSettings>(),
       ),
     )

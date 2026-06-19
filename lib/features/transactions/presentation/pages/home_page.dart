@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/features/insights/presentation/pages/insights_page.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
@@ -28,6 +29,13 @@ class HomeView extends StatelessWidget {
         title: const MonthNavigator(),
         centerTitle: true,
         actions: <Widget>[
+          IconButton(
+            icon: Icon(PhosphorIcons.chartBar(PhosphorIconsStyle.bold)),
+            tooltip: 'Insights',
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(builder: (_) => const InsightsPage()),
+            ),
+          ),
           IconButton(
             icon: Icon(PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold)),
             tooltip: 'Search',
