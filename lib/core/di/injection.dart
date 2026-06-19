@@ -199,6 +199,7 @@ Future<void> configureDependencies() async {
       () => InsightsCubit(
         getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
         getCategories: getIt<GetCategories>(),
+        getBudgets: getIt<GetBudgets>(),
         getSettings: getIt<GetSettings>(),
       ),
     )
