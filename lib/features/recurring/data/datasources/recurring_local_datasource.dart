@@ -11,6 +11,12 @@ abstract interface class RecurringLocalDataSource {
   Future<void> upsertRecurringTransaction(RecurringTransaction rule);
   Future<void> deleteRecurringTransaction(String id);
   Future<int> materializeDue(DateTime asOf);
+
+  /// All rows including soft-deleted tombstones, for sync.
+  Future<List<RecurringTransactionModel>> getAllRecurringForSync();
+
+  /// Writes a rule row verbatim (used when applying a remote sync record).
+  Future<void> putRecurring(RecurringTransactionModel model);
 }
 
 final class RecurringLocalDataSourceImpl implements RecurringLocalDataSource {
@@ -58,13 +64,43 @@ final class RecurringLocalDataSourceImpl implements RecurringLocalDataSource {
   Future<void> deleteRecurringTransaction(String id) async {
     try {
       final db = await _appDatabase.database;
-      await db.delete(
+      // Soft-delete (tombstone) so the removal propagates through sync.
+      await db.update(
         DbConstants.recurringTransactionsTable,
+        <String, dynamic>{
+          DbConstants.columnIsDeleted: 1,
+          DbConstants.columnUpdatedAt: DateTime.now().millisecondsSinceEpoch,
+        },
         where: '${DbConstants.columnId} = ?',
         whereArgs: <String>[id],
       );
     } catch (error) {
       throw CacheException('Failed to delete recurring transaction: $error');
+    }
+  }
+
+  @override
+  Future<List<RecurringTransactionModel>> getAllRecurringForSync() async {
+    try {
+      final db = await _appDatabase.database;
+      final rows = await db.query(DbConstants.recurringTransactionsTable);
+      return rows.map(RecurringTransactionModel.fromMap).toList();
+    } catch (error) {
+      throw CacheException('Failed to load recurring for sync: $error');
+    }
+  }
+
+  @override
+  Future<void> putRecurring(RecurringTransactionModel model) async {
+    try {
+      final db = await _appDatabase.database;
+      await db.insert(
+        DbConstants.recurringTransactionsTable,
+        model.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (error) {
+      throw CacheException('Failed to write recurring: $error');
     }
   }
 

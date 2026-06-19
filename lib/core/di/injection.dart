@@ -75,6 +75,8 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<SyncEngine>(
     () => SyncEngine(
       local: getIt<TransactionLocalDataSource>(),
+      budgets: getIt<BudgetLocalDataSource>(),
+      recurring: getIt<RecurringLocalDataSource>(),
       cloudFileStore: getIt<CloudFileStore>(),
     ),
   );
