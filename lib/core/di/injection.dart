@@ -209,6 +209,9 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<GetAccountBalances>(
       () => GetAccountBalances(getIt<AccountsRepository>()),
     )
+    ..registerLazySingleton<GetAccountTransactions>(
+      () => GetAccountTransactions(getIt<AccountsRepository>()),
+    )
     ..registerLazySingleton<GetTransfers>(
       () => GetTransfers(getIt<AccountsRepository>()),
     )

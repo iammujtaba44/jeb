@@ -1,6 +1,7 @@
 import 'package:jeb/core/utils/typedefs.dart';
 import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/accounts/domain/entities/transfer.dart';
+import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 
 abstract interface class AccountsRepository {
   ResultFuture<List<Account>> getAccounts();
@@ -12,6 +13,9 @@ abstract interface class AccountsRepository {
 
   /// Current balance per account id, each in the account's own currency.
   ResultFuture<Map<String, double>> balances();
+
+  /// Non-deleted transactions assigned to [accountId], most recent first.
+  ResultFuture<List<Transaction>> accountTransactions(String accountId);
 
   ResultFuture<List<Transfer>> getTransfers();
   ResultVoid saveTransfer(Transfer transfer);

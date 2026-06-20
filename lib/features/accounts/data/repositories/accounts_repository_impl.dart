@@ -6,6 +6,7 @@ import 'package:jeb/features/accounts/data/datasources/accounts_local_datasource
 import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/accounts/domain/entities/transfer.dart';
 import 'package:jeb/features/accounts/domain/repositories/accounts_repository.dart';
+import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 
 final class AccountsRepositoryImpl implements AccountsRepository {
   const AccountsRepositoryImpl(this._local);
@@ -39,6 +40,10 @@ final class AccountsRepositoryImpl implements AccountsRepository {
 
   @override
   ResultFuture<Map<String, double>> balances() => _guard(_local.balances);
+
+  @override
+  ResultFuture<List<Transaction>> accountTransactions(String accountId) =>
+      _guard(() => _local.getAccountTransactions(accountId));
 
   @override
   ResultFuture<List<Transfer>> getTransfers() => _guard(_local.getTransfers);

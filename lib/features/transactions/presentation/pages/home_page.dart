@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
-import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/app_snackbar.dart';
+import 'package:jeb/features/accounts/presentation/cubit/accounts_cubit.dart';
+import 'package:jeb/features/accounts/presentation/widgets/accounts_carousel.dart';
 import 'package:jeb/features/insights/presentation/pages/insights_page.dart';
+import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
+import 'package:jeb/features/plans/presentation/widgets/plans_carousel.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
@@ -48,14 +51,26 @@ class HomeView extends StatelessWidget {
       body: const _HomeBody(),
     );
   }
+}
 
-  Future<void> _openSearch(BuildContext context) async {
-    final TransactionsCubit cubit = context.read<TransactionsCubit>();
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => const SearchPage()),
-    );
-    await cubit.refresh();
-  }
+/// Reloads the dashboard's three data sources together (pull-to-refresh).
+Future<void> _refreshAll(BuildContext context) async {
+  final TransactionsCubit transactions = context.read<TransactionsCubit>();
+  final AccountsCubit accounts = context.read<AccountsCubit>();
+  final PlansCubit plans = context.read<PlansCubit>();
+  await Future.wait(<Future<void>>[
+    transactions.load(),
+    accounts.load(),
+    plans.load(),
+  ]);
+}
+
+Future<void> _openSearch(BuildContext context) async {
+  final TransactionsCubit cubit = context.read<TransactionsCubit>();
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(builder: (_) => const SearchPage()),
+  );
+  await cubit.refresh();
 }
 
 class _HomeBody extends StatelessWidget {
@@ -72,7 +87,7 @@ class _HomeBody extends StatelessWidget {
               onRetry: context.read<TransactionsCubit>().load,
             ),
           TransactionsLoaded() => RefreshIndicator(
-              onRefresh: context.read<TransactionsCubit>().load,
+              onRefresh: () => _refreshAll(context),
               child: _LoadedContent(state: state),
             ),
         };
@@ -81,6 +96,9 @@ class _HomeBody extends StatelessWidget {
   }
 }
 
+/// How many transactions the home screen shows before "View all".
+const int _recentLimit = 5;
+
 class _LoadedContent extends StatelessWidget {
   const _LoadedContent({required this.state});
 
@@ -88,7 +106,8 @@ class _LoadedContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_Row> rows = _buildRows(state.transactions);
+    final List<Transaction> recent =
+        state.transactions.take(_recentLimit).toList();
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -105,6 +124,8 @@ class _LoadedContent extends StatelessWidget {
             ),
           ),
         ),
+        const SliverToBoxAdapter(child: AccountsCarousel()),
+        const SliverToBoxAdapter(child: PlansCarousel()),
         if (state.totalExpense > 0)
           SliverToBoxAdapter(
             child: Padding(
@@ -117,101 +138,87 @@ class _LoadedContent extends StatelessWidget {
             ),
           ),
         if (state.transactions.isEmpty)
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: EmptyTransactionsView(),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: EmptyTransactionsView(),
+            ),
           )
-        else
+        else ...<Widget>[
+          SliverToBoxAdapter(
+            child: _RecentHeader(
+              hasMore: state.transactions.length > _recentLimit,
+              onViewAll: () => _openSearch(context),
+            ),
+          ),
           SliverList.builder(
-            itemCount: rows.length,
+            itemCount: recent.length,
             itemBuilder: (BuildContext context, int index) {
-              final _Row row = rows[index];
-              return switch (row) {
-                _HeaderRow(:final String label) => _DayHeader(label: label),
-                _TxnRow(:final Transaction transaction) => TransactionListItem(
-                    transaction: transaction,
-                    category: state.categoriesById[transaction.categoryId],
-                    onTap: () => _openTransactionEditor(
-                      context,
-                      existing: transaction,
-                      categories: state.categories,
-                    ),
-                    onDelete: (_) => _handleDelete(context, transaction),
-                  ),
-              };
+              final Transaction transaction = recent[index];
+              return TransactionListItem(
+                transaction: transaction,
+                category: state.categoriesById[transaction.categoryId],
+                onTap: () => _openTransactionEditor(
+                  context,
+                  existing: transaction,
+                  categories: state.categories,
+                ),
+                onDelete: (_) => _handleDelete(context, transaction),
+              );
             },
           ),
+        ],
         const SliverToBoxAdapter(child: SizedBox(height: 96)),
       ],
     );
   }
 }
 
-class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.label});
+/// Header above the recent-transactions list with a "View all" affordance.
+class _RecentHeader extends StatelessWidget {
+  const _RecentHeader({required this.hasMore, required this.onViewAll});
 
-  final String label;
+  final bool hasMore;
+  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.xs,
+        AppSpacing.sm,
+        AppSpacing.sm,
+        0,
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+      child: Row(
+        children: <Widget>[
+          Text(
+            'Recent',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const Spacer(),
+          if (hasMore)
+            TextButton(
+              onPressed: onViewAll,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text('View all'),
+                  const SizedBox(width: 2),
+                  Icon(PhosphorIcons.caretRight(), size: 14, color: scheme.primary),
+                ],
+              ),
             ),
+        ],
       ),
     );
   }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-/// A row in the grouped list: either a day header or a transaction.
-sealed class _Row {
-  const _Row();
-}
-
-final class _HeaderRow extends _Row {
-  const _HeaderRow(this.label);
-  final String label;
-}
-
-final class _TxnRow extends _Row {
-  const _TxnRow(this.transaction);
-  final Transaction transaction;
-}
-
-/// Groups date-sorted transactions under "Today" / "Yesterday" / date headers.
-List<_Row> _buildRows(List<Transaction> transactions) {
-  final List<_Row> rows = <_Row>[];
-  String? currentLabel;
-  for (final Transaction t in transactions) {
-    final String label = _dayLabel(t.date);
-    if (label != currentLabel) {
-      currentLabel = label;
-      rows.add(_HeaderRow(label));
-    }
-    rows.add(_TxnRow(t));
-  }
-  return rows;
-}
-
-String _dayLabel(DateTime date) {
-  final DateTime now = DateTime.now();
-  final DateTime day = DateTime(date.year, date.month, date.day);
-  final int diff = DateTime(now.year, now.month, now.day).difference(day).inDays;
-  if (diff == 0) return 'Today';
-  if (diff == 1) return 'Yesterday';
-  return DateFormatter.dayMonth(date);
-}
 
 Future<void> _openTransactionEditor(
   BuildContext context, {

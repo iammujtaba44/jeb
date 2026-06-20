@@ -7,6 +7,7 @@ import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/accounts/domain/entities/transfer.dart';
 import 'package:jeb/features/accounts/presentation/cubit/accounts_cubit.dart';
+import 'package:jeb/features/accounts/presentation/pages/account_detail_page.dart';
 import 'package:jeb/features/accounts/presentation/pages/account_editor_page.dart';
 import 'package:jeb/features/accounts/presentation/pages/transfer_editor_page.dart';
 import 'package:jeb/features/accounts/presentation/widgets/account_type_visuals.dart';
@@ -65,7 +66,7 @@ class AccountsView extends StatelessWidget {
                 _AccountCard(
                   account: account,
                   balance: state.balanceFor(account),
-                  onTap: () => _editAccount(context, account),
+                  onTap: () => _openDetail(context, account),
                   onDelete: () => _confirmDeleteAccount(context, account),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -111,6 +112,17 @@ class AccountsView extends StatelessWidget {
       ),
     );
     if (account != null) await cubit.saveAccount(account);
+  }
+
+  void _openDetail(BuildContext context, Account account) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider<AccountsCubit>.value(
+          value: context.read<AccountsCubit>(),
+          child: AccountDetailPage(accountId: account.id),
+        ),
+      ),
+    );
   }
 
   Future<void> _editAccount(BuildContext context, Account existing) async {

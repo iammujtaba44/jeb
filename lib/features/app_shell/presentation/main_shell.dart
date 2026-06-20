@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/usecase/usecase.dart';
+import 'package:jeb/features/accounts/presentation/cubit/accounts_cubit.dart';
 import 'package:jeb/features/budgets/presentation/pages/budgets_page.dart';
+import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/pages/plans_page.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/settings/presentation/pages/settings_page.dart';
@@ -21,8 +23,20 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<TransactionsCubit>(
-      create: (_) => getIt<TransactionsCubit>()..load(),
+    return MultiBlocProvider(
+      providers: <BlocProvider<dynamic>>[
+        BlocProvider<TransactionsCubit>(
+          create: (_) => getIt<TransactionsCubit>()..load(),
+        ),
+        // Shared with the home dashboard carousels so they refresh together
+        // with the central "+" add flow.
+        BlocProvider<AccountsCubit>(
+          create: (_) => getIt<AccountsCubit>()..load(),
+        ),
+        BlocProvider<PlansCubit>(
+          create: (_) => getIt<PlansCubit>()..load(),
+        ),
+      ],
       child: const _ShellScaffold(),
     );
   }
@@ -71,6 +85,8 @@ class _ShellScaffoldState extends State<_ShellScaffold>
     setState(() => _index = index);
     if (index == 0) {
       context.read<TransactionsCubit>().refresh();
+      context.read<AccountsCubit>().load();
+      context.read<PlansCubit>().load();
     }
   }
 
@@ -78,6 +94,7 @@ class _ShellScaffoldState extends State<_ShellScaffold>
     HapticFeedback.selectionClick();
     final TransactionsCubit transactionsCubit =
         context.read<TransactionsCubit>();
+    final AccountsCubit accountsCubit = context.read<AccountsCubit>();
     final String currency =
         context.read<SettingsCubit>().state.settings.defaultCurrencyCode;
 
@@ -96,6 +113,8 @@ class _ShellScaffoldState extends State<_ShellScaffold>
     );
     if (saved ?? false) {
       await transactionsCubit.refresh();
+      // Keep the home account balances in sync with the new transaction.
+      await accountsCubit.load();
     }
   }
 

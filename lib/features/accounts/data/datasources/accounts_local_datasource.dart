@@ -6,6 +6,7 @@ import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/accounts/domain/entities/account_balance.dart';
 import 'package:jeb/features/accounts/domain/entities/transfer.dart';
 import 'package:jeb/features/transactions/data/datasources/app_database.dart';
+import 'package:jeb/features/transactions/data/models/transaction_model.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction_type.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -23,6 +24,9 @@ abstract interface class AccountsLocalDataSource {
 
   /// Current balance per account id, each in the account's own currency.
   Future<Map<String, double>> balances();
+
+  /// Non-deleted transactions assigned to [accountId], most recent first.
+  Future<List<TransactionModel>> getAccountTransactions(String accountId);
 
   // Sync (include tombstones).
   Future<List<AccountModel>> getAllAccountsForSync();
@@ -198,6 +202,25 @@ final class AccountsLocalDataSourceImpl implements AccountsLocalDataSource {
       );
     } catch (error) {
       throw CacheException('Failed to compute balances: $error');
+    }
+  }
+
+  @override
+  Future<List<TransactionModel>> getAccountTransactions(
+    String accountId,
+  ) async {
+    try {
+      final db = await _appDatabase.database;
+      final rows = await db.query(
+        DbConstants.transactionsTable,
+        where: '${DbConstants.columnAccountId} = ? AND '
+            '${DbConstants.columnIsDeleted} = 0',
+        whereArgs: <String>[accountId],
+        orderBy: '${DbConstants.columnDate} DESC',
+      );
+      return rows.map(TransactionModel.fromMap).toList();
+    } catch (error) {
+      throw CacheException('Failed to load account transactions: $error');
     }
   }
 

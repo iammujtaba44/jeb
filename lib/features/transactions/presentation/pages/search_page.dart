@@ -197,26 +197,106 @@ class _Results extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.results.isEmpty) {
-          return Center(
-            child: Text(
-              'No matching transactions',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+          return _EmptyResults(
+            filtered: state.criteria.hasActiveFilters ||
+                state.criteria.query.trim().isNotEmpty,
           );
         }
-        return ListView.separated(
-          itemCount: state.results.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (BuildContext context, int index) {
-            final Transaction transaction = state.results[index];
-            return _SearchResultTile(
-              transaction: transaction,
-              category: state.categoriesById[transaction.categoryId],
-              onTap: () => _openEdit(context, transaction, state.categories),
-            );
-          },
+        return Column(
+          children: <Widget>[
+            _CountBar(count: state.results.length),
+            Expanded(
+              child: ListView.separated(
+                itemCount: state.results.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, indent: 72),
+                itemBuilder: (BuildContext context, int index) {
+                  final Transaction transaction = state.results[index];
+                  return _SearchResultTile(
+                    transaction: transaction,
+                    category: state.categoriesById[transaction.categoryId],
+                    onTap: () =>
+                        _openEdit(context, transaction, state.categories),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _CountBar extends StatelessWidget {
+  const _CountBar({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '$count ${count == 1 ? 'transaction' : 'transactions'}',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyResults extends StatelessWidget {
+  const _EmptyResults({required this.filtered});
+
+  final bool filtered;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.duotone),
+              size: 52,
+              color: scheme.primary,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              filtered ? 'No matches' : 'Nothing here yet',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              filtered
+                  ? 'Try a different search or clear the filters.'
+                  : 'Add a transaction and it will show up here.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -241,12 +321,32 @@ class _SearchResultTile extends StatelessWidget {
         ? transaction.note!
         : DateFormatter.dayMonth(transaction.date);
 
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return ListTile(
       onTap: onTap,
       leading: category == null
           ? const Icon(Icons.help_outline)
           : CategoryAvatar(category: category!),
-      title: Text(category?.name ?? 'Uncategorized'),
+      title: Row(
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              category?.name ?? 'Uncategorized',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (transaction.isRecurring) ...<Widget>[
+            const SizedBox(width: 6),
+            Icon(PhosphorIcons.arrowsClockwise(PhosphorIconsStyle.bold),
+                size: 13, color: scheme.onSurfaceVariant),
+          ],
+          if (transaction.hasReceipt) ...<Widget>[
+            const SizedBox(width: 6),
+            Icon(PhosphorIcons.paperclip(PhosphorIconsStyle.bold),
+                size: 13, color: scheme.onSurfaceVariant),
+          ],
+        ],
+      ),
       subtitle: Text(subtitle),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,

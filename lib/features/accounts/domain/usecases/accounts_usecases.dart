@@ -3,6 +3,7 @@ import 'package:jeb/core/utils/typedefs.dart';
 import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/accounts/domain/entities/transfer.dart';
 import 'package:jeb/features/accounts/domain/repositories/accounts_repository.dart';
+import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 
 final class GetAccounts extends UseCase<List<Account>, NoParams> {
   const GetAccounts(this._repo);
@@ -38,6 +39,14 @@ final class GetAccountBalances extends UseCase<Map<String, double>, NoParams> {
   final AccountsRepository _repo;
   @override
   ResultFuture<Map<String, double>> call(NoParams params) => _repo.balances();
+}
+
+final class GetAccountTransactions extends UseCase<List<Transaction>, String> {
+  const GetAccountTransactions(this._repo);
+  final AccountsRepository _repo;
+  @override
+  ResultFuture<List<Transaction>> call(String params) =>
+      _repo.accountTransactions(params);
 }
 
 final class GetTransfers extends UseCase<List<Transfer>, NoParams> {
