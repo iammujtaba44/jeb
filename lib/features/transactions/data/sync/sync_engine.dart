@@ -157,9 +157,13 @@ class SyncEngine {
       await _receipts.init();
       final List<TransactionModel> all =
           await _local.getAllTransactionsForSync();
+      final List<PlanPaymentModel> payments =
+          await _plans.getAllPaymentsForSync();
       final Set<String> withReceipts = <String>{
         for (final TransactionModel t in all)
           if (!t.isDeleted && t.receiptPath != null) t.receiptPath!,
+        for (final PlanPaymentModel p in payments)
+          if (!p.isDeleted) ...p.receiptPaths,
       };
       if (withReceipts.isEmpty) return;
 

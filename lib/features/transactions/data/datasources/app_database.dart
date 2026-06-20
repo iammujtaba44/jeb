@@ -57,6 +57,17 @@ final class AppDatabase {
       await db.execute(_createPlansTableSql);
       await db.execute(_createPlanPaymentsTableSql);
     }
+    if (oldVersion < 7) {
+      // plan_payments created at v6 lacked receipt_paths; add it if missing.
+      try {
+        await db.execute(
+          'ALTER TABLE ${DbConstants.planPaymentsTable} '
+          'ADD COLUMN ${DbConstants.columnReceiptPaths} TEXT',
+        );
+      } catch (_) {
+        // Column already present (table created fresh with the latest schema).
+      }
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
@@ -138,6 +149,7 @@ final class AppDatabase {
       '${DbConstants.columnAmount} REAL NOT NULL, '
       '${DbConstants.columnDate} INTEGER NOT NULL, '
       '${DbConstants.columnNote} TEXT, '
+      '${DbConstants.columnReceiptPaths} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

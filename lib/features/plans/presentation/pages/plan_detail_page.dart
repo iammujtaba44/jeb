@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jeb/core/constants/currencies.dart';
 import 'package:jeb/core/di/injection.dart';
+import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/features/plans/domain/entities/plan.dart';
@@ -10,6 +14,7 @@ import 'package:jeb/features/plans/domain/entities/plan_payment.dart';
 import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/pages/plan_editor_page.dart';
 import 'package:jeb/features/plans/presentation/widgets/plan_kind_visuals.dart';
+import 'package:jeb/features/transactions/presentation/pages/receipt_viewer_page.dart';
 import 'package:uuid/uuid.dart';
 
 class PlanDetailPage extends StatefulWidget {
@@ -50,6 +55,7 @@ class _PlanDetailPageState extends State<PlanDetailPage> {
         amount: draft.amount,
         date: draft.date,
         note: draft.note,
+        receiptPaths: draft.receiptPaths,
       ),
     );
     if (mounted) _reloadPayments();
@@ -220,7 +226,7 @@ class _Header extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              MoneyFormatter.format(paid, cur),
+              MoneyFormatter.compact(paid, cur),
               style: textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -228,7 +234,7 @@ class _Header extends StatelessWidget {
             Text(
               plan.hasTarget
                   ? '${plan.kind.contributeVerb.toLowerCase()} of '
-                      '${MoneyFormatter.format(plan.targetAmount!, cur)}'
+                      '${MoneyFormatter.compact(plan.targetAmount!, cur)}'
                   : '${plan.kind.contributeVerb.toLowerCase()} so far',
               style: textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
@@ -250,7 +256,7 @@ class _Header extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   Text(
-                    '${MoneyFormatter.format(plan.remaining(paid), cur)} left',
+                    '${MoneyFormatter.compact(plan.remaining(paid), cur)} left',
                     style: textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -285,30 +291,140 @@ class _PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        MoneyFormatter.format(payment.amount, currency),
-        style: const TextStyle(fontWeight: FontWeight.w600),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ListTile(
+          title: Text(
+            MoneyFormatter.format(payment.amount, currency),
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            payment.note?.isNotEmpty ?? false
+                ? '${DateFormatter.dayMonth(payment.date)} · ${payment.note}'
+                : DateFormatter.dayMonth(payment.date),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete payment',
+            onPressed: onDelete,
+          ),
+        ),
+        if (payment.hasReceipts)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: Row(
+              children: <Widget>[
+                for (final String path in payment.receiptPaths) ...<Widget>[
+                  _ReceiptThumb(relativePath: path),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReceiptThumb extends StatelessWidget {
+  const _ReceiptThumb({required this.relativePath});
+
+  final String relativePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final String absolute = getIt<ReceiptStore>().absolutePath(relativePath);
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ReceiptViewerPage(absolutePath: absolute),
+        ),
       ),
-      subtitle: Text(
-        payment.note?.isNotEmpty ?? false
-            ? '${DateFormatter.dayMonth(payment.date)} · ${payment.note}'
-            : DateFormatter.dayMonth(payment.date),
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline),
-        tooltip: 'Delete payment',
-        onPressed: onDelete,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        child: Image.file(
+          File(absolute),
+          width: 52,
+          height: 52,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            width: 52,
+            height: 52,
+            color: const Color(0x11000000),
+            child: const Icon(Icons.broken_image_outlined, size: 20),
+          ),
+        ),
       ),
     );
   }
 }
 
+class _ReceiptDraftThumb extends StatelessWidget {
+  const _ReceiptDraftThumb({
+    required this.relativePath,
+    required this.onRemove,
+  });
+
+  final String relativePath;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final String absolute = getIt<ReceiptStore>().absolutePath(relativePath);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          child: Image.file(
+            File(absolute),
+            width: 52,
+            height: 52,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 52,
+              height: 52,
+              color: const Color(0x11000000),
+              child: const Icon(Icons.broken_image_outlined, size: 20),
+            ),
+          ),
+        ),
+        Positioned(
+          top: -8,
+          right: -8,
+          child: IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            icon: CircleAvatar(
+              radius: 10,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              child: const Icon(Icons.close, size: 12, color: Colors.white),
+            ),
+            onPressed: onRemove,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PaymentDraft {
-  const _PaymentDraft({required this.amount, required this.date, this.note});
+  const _PaymentDraft({
+    required this.amount,
+    required this.date,
+    this.note,
+    this.receiptPaths = const <String>[],
+  });
   final double amount;
   final DateTime date;
   final String? note;
+  final List<String> receiptPaths;
 }
 
 Future<_PaymentDraft?> _showAddPaymentSheet(BuildContext context, Plan plan) {
@@ -337,7 +453,10 @@ class _AddPaymentSheet extends StatefulWidget {
 class _AddPaymentSheetState extends State<_AddPaymentSheet> {
   final TextEditingController _amount = TextEditingController();
   final TextEditingController _note = TextEditingController();
+  final List<String> _receipts = <String>[];
   DateTime _date = DateTime.now();
+
+  static const int _maxReceipts = 2;
 
   @override
   void initState() {
@@ -366,6 +485,39 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
     if (picked != null) setState(() => _date = picked);
   }
 
+  Future<void> _attachReceipt() async {
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    final XFile? picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 2000,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+    final String relative = await getIt<ReceiptStore>().save(picked.path);
+    if (mounted) setState(() => _receipts.add(relative));
+  }
+
   void _save() {
     final double amount = double.tryParse(_amount.text.trim()) ?? 0;
     if (amount <= 0) return;
@@ -374,6 +526,7 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
         amount: amount,
         date: DateTime(_date.year, _date.month, _date.day),
         note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+        receiptPaths: List<String>.unmodifiable(_receipts),
       ),
     );
   }
@@ -442,6 +595,24 @@ class _AddPaymentSheetState extends State<_AddPaymentSheet> {
               decoration: const InputDecoration(
                 labelText: 'Note (optional)',
               ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: <Widget>[
+                for (final String path in _receipts) ...<Widget>[
+                  _ReceiptDraftThumb(
+                    relativePath: path,
+                    onRemove: () => setState(() => _receipts.remove(path)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                if (_receipts.length < _maxReceipts)
+                  OutlinedButton.icon(
+                    onPressed: _attachReceipt,
+                    icon: const Icon(Icons.attach_file, size: 18),
+                    label: Text(_receipts.isEmpty ? 'Add receipt' : 'Add'),
+                  ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
             FilledButton(

@@ -3,7 +3,7 @@ abstract final class DbConstants {
   const DbConstants._();
 
   static const String databaseName = 'jeb.db';
-  static const int databaseVersion = 6;
+  static const int databaseVersion = 7;
 
   // Tables
   static const String transactionsTable = 'transactions';
@@ -49,6 +49,9 @@ abstract final class DbConstants {
   /// Relative path (within the app documents dir) of an attached receipt photo,
   /// or null if none.
   static const String columnReceiptPath = 'receipt_path';
+
+  /// Newline-joined relative paths of receipt photos on a plan payment.
+  static const String columnReceiptPaths = 'receipt_paths';
 
   // Category columns
   static const String columnName = 'name';

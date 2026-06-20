@@ -91,6 +91,22 @@ void main() {
       expect(back.planId, 'p1');
       expect(back.amount, 200000);
       expect(back.note, 'Feb installment');
+      expect(back.receiptPaths, isEmpty);
+    });
+
+    test('PlanPaymentModel round-trips its receipt paths', () {
+      final PlanPaymentModel back = PlanPaymentModel.fromMap(
+        PlanPaymentModel(
+          id: 'pay2',
+          planId: 'p1',
+          amount: 200000,
+          date: DateTime(2026, 2, 1),
+          receiptPaths: const <String>['receipts/a.jpg', 'receipts/b.jpg'],
+          updatedAt: DateTime(2026, 2, 1),
+        ).toMap(),
+      );
+      expect(back.receiptPaths, <String>['receipts/a.jpg', 'receipts/b.jpg']);
+      expect(back.hasReceipts, isTrue);
     });
   });
 }

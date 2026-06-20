@@ -119,8 +119,8 @@ class _PlanCard extends StatelessWidget {
                         ),
                         Text(
                           '${plan.kind.contributeVerb} '
-                          '${MoneyFormatter.format(paid, plan.currencyCode)}'
-                          '${plan.hasTarget ? ' of ${MoneyFormatter.format(plan.targetAmount!, plan.currencyCode)}' : ''}',
+                          '${MoneyFormatter.compact(paid, plan.currencyCode)}'
+                          '${plan.hasTarget ? ' of ${MoneyFormatter.compact(plan.targetAmount!, plan.currencyCode)}' : ''}',
                           style: textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),

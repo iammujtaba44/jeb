@@ -8,6 +8,7 @@ class PlanPayment extends Equatable {
     required this.amount,
     required this.date,
     this.note,
+    this.receiptPaths = const <String>[],
   });
 
   final String id;
@@ -16,6 +17,12 @@ class PlanPayment extends Equatable {
   final DateTime date;
   final String? note;
 
+  /// Relative paths of attached receipt photos (0–2).
+  final List<String> receiptPaths;
+
+  bool get hasReceipts => receiptPaths.isNotEmpty;
+
   @override
-  List<Object?> get props => <Object?>[id, planId, amount, date, note];
+  List<Object?> get props =>
+      <Object?>[id, planId, amount, date, note, receiptPaths];
 }

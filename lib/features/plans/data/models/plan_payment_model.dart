@@ -10,6 +10,7 @@ final class PlanPaymentModel extends PlanPayment {
     required super.date,
     required this.updatedAt,
     super.note,
+    super.receiptPaths,
     this.isDeleted = false,
   });
 
@@ -26,11 +27,13 @@ final class PlanPaymentModel extends PlanPayment {
       amount: p.amount,
       date: p.date,
       note: p.note,
+      receiptPaths: p.receiptPaths,
       updatedAt: updatedAt,
     );
   }
 
   factory PlanPaymentModel.fromMap(DataMap map) {
+    final String? rawReceipts = map[DbConstants.columnReceiptPaths] as String?;
     return PlanPaymentModel(
       id: map[DbConstants.columnId] as String,
       planId: map[DbConstants.columnPlanId] as String,
@@ -39,6 +42,9 @@ final class PlanPaymentModel extends PlanPayment {
         map[DbConstants.columnDate] as int,
       ),
       note: map[DbConstants.columnNote] as String?,
+      receiptPaths: rawReceipts == null || rawReceipts.isEmpty
+          ? const <String>[]
+          : rawReceipts.split('\n').where((String s) => s.isNotEmpty).toList(),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         map[DbConstants.columnUpdatedAt] as int,
       ),
@@ -52,6 +58,8 @@ final class PlanPaymentModel extends PlanPayment {
         DbConstants.columnAmount: amount,
         DbConstants.columnDate: date.millisecondsSinceEpoch,
         DbConstants.columnNote: note,
+        DbConstants.columnReceiptPaths:
+            receiptPaths.isEmpty ? null : receiptPaths.join('\n'),
         DbConstants.columnUpdatedAt: updatedAt.millisecondsSinceEpoch,
         DbConstants.columnIsDeleted: isDeleted ? 1 : 0,
       };
