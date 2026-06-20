@@ -54,7 +54,7 @@ class MonthSummaryCard extends StatelessWidget {
             duration: const Duration(milliseconds: 650),
             curve: Curves.easeOutCubic,
             builder: (BuildContext context, double value, _) => Text(
-              MoneyFormatter.format(value, currencyCode),
+              MoneyFormatter.compact(value, currencyCode),
               style: textTheme.displaySmall?.copyWith(
                 color: scheme.onPrimary,
                 fontWeight: FontWeight.bold,
@@ -68,7 +68,7 @@ class MonthSummaryCard extends StatelessWidget {
                 child: _SummaryPill(
                   icon: Icons.south_west,
                   label: 'Income',
-                  value: MoneyFormatter.format(income, currencyCode),
+                  value: MoneyFormatter.compact(income, currencyCode),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -76,7 +76,7 @@ class MonthSummaryCard extends StatelessWidget {
                 child: _SummaryPill(
                   icon: Icons.north_east,
                   label: 'Expense',
-                  value: MoneyFormatter.format(expense, currencyCode),
+                  value: MoneyFormatter.compact(expense, currencyCode),
                 ),
               ),
             ],
@@ -159,7 +159,7 @@ class _SavingsTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${saving ? '' : '-'}${MoneyFormatter.format(balance.abs(), currencyCode)}',
+            '${saving ? '' : '-'}${MoneyFormatter.compact(balance.abs(), currencyCode)}',
             style: textTheme.titleMedium?.copyWith(
               color: saving ? onPrimary : _red,
               fontWeight: FontWeight.w700,
@@ -198,9 +198,9 @@ class _BudgetMeter extends StatelessWidget {
     final Color barColor = over ? _red : (ratio >= 0.8 ? _amber : onPrimary);
 
     final String detail = over
-        ? 'Over by ${MoneyFormatter.format(spent - limit, currencyCode)}'
-        : '${MoneyFormatter.format(limit - spent, currencyCode)} left of '
-            '${MoneyFormatter.format(limit, currencyCode)}';
+        ? 'Over by ${MoneyFormatter.compact(spent - limit, currencyCode)}'
+        : '${MoneyFormatter.compact(limit - spent, currencyCode)} left of '
+            '${MoneyFormatter.compact(limit, currencyCode)}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

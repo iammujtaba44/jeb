@@ -111,14 +111,14 @@ class _TotalsCard extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: 'Income',
-                    value: MoneyFormatter.format(state.totalIncome, cur),
+                    value: MoneyFormatter.compact(state.totalIncome, cur),
                     color: const Color(0xFF16A34A),
                   ),
                 ),
                 Expanded(
                   child: _Stat(
                     label: 'Spending',
-                    value: MoneyFormatter.format(state.totalSpending, cur),
+                    value: MoneyFormatter.compact(state.totalSpending, cur),
                     color: scheme.error,
                   ),
                 ),
@@ -130,7 +130,7 @@ class _TotalsCard extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: 'Savings',
-                    value: MoneyFormatter.format(state.totalSavings, cur),
+                    value: MoneyFormatter.compact(state.totalSavings, cur),
                     color: positiveSavings
                         ? const Color(0xFF16A34A)
                         : scheme.error,
@@ -141,7 +141,7 @@ class _TotalsCard extends StatelessWidget {
                     label: 'Budget',
                     value: state.totalBudget == null
                         ? 'Not set'
-                        : MoneyFormatter.format(state.totalBudget!, cur),
+                        : MoneyFormatter.compact(state.totalBudget!, cur),
                     color: scheme.onSurface,
                   ),
                 ),
@@ -249,7 +249,7 @@ class _TrendCard extends StatelessWidget {
                       getTooltipItem: (BarChartGroupData group, int groupIndex,
                           BarChartRodData rod, int rodIndex) {
                         return BarTooltipItem(
-                          MoneyFormatter.format(rod.toY, state.currency),
+                          MoneyFormatter.compact(rod.toY, state.currency),
                           textTheme.labelMedium!.copyWith(
                             color: scheme.onInverseSurface,
                             fontWeight: FontWeight.w700,
@@ -405,7 +405,7 @@ class _CheckRow extends StatelessWidget {
     // "Why": the categories that drove the spend that month.
     final String drivers = check.drivers
         .map((CategorySpend d) =>
-            '${d.name} ${MoneyFormatter.format(d.amount, currency)}')
+            '${d.name} ${MoneyFormatter.compact(d.amount, currency)}')
         .join(' · ');
 
     return Padding(
@@ -432,8 +432,8 @@ class _CheckRow extends StatelessWidget {
                     ),
                     Text(
                       over
-                          ? 'Over by ${MoneyFormatter.format(check.over, currency)}'
-                          : '${MoneyFormatter.format(check.remaining, currency)} left',
+                          ? 'Over by ${MoneyFormatter.compact(check.over, currency)}'
+                          : '${MoneyFormatter.compact(check.remaining, currency)} left',
                       style: textTheme.bodyMedium?.copyWith(
                         color: color,
                         fontWeight: FontWeight.w700,
@@ -526,7 +526,7 @@ class _CategoryBar extends StatelessWidget {
               ),
             ),
             Text(
-              MoneyFormatter.format(spend.amount, currency),
+              MoneyFormatter.compact(spend.amount, currency),
               style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
