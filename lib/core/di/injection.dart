@@ -197,6 +197,9 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<GetAccounts>(
       () => GetAccounts(getIt<AccountsRepository>()),
     )
+    ..registerLazySingleton<GetArchivedAccounts>(
+      () => GetArchivedAccounts(getIt<AccountsRepository>()),
+    )
     ..registerLazySingleton<SaveAccount>(
       () => SaveAccount(getIt<AccountsRepository>()),
     )
@@ -312,6 +315,7 @@ Future<void> configureDependencies() async {
     ..registerFactory<AccountsCubit>(
       () => AccountsCubit(
         getAccounts: getIt<GetAccounts>(),
+        getArchivedAccounts: getIt<GetArchivedAccounts>(),
         saveAccount: getIt<SaveAccount>(),
         deleteAccount: getIt<DeleteAccount>(),
         getAccountBalances: getIt<GetAccountBalances>(),

@@ -17,6 +17,7 @@ void main() {
       nextDueDate: DateTime(2026, 3, 1),
       endDate: DateTime(2026, 12, 1),
       note: 'Streaming',
+      accountId: 'acc-card',
       updatedAt: DateTime(2026, 2, 1),
     );
 
@@ -26,6 +27,7 @@ void main() {
           RecurringTransactionModel.fromMap(map);
 
       expect(back.id, 'r1');
+      expect(back.accountId, 'acc-card');
       expect(back.amount, 9.99);
       expect(back.currencyCode, 'EUR');
       expect(back.categoryId, 'subs');
@@ -55,6 +57,7 @@ void main() {
 
       expect(back.endDate, isNull);
       expect(back.note, isNull);
+      expect(back.accountId, isNull);
       expect(back.type, TransactionType.income);
     });
   });

@@ -29,6 +29,7 @@ class _AccountEditorPageState extends State<AccountEditorPage> {
   late final TextEditingController _note;
   late AccountType _type;
   late String _currency;
+  late bool _archived;
 
   @override
   void initState() {
@@ -39,6 +40,7 @@ class _AccountEditorPageState extends State<AccountEditorPage> {
     _note = TextEditingController(text: e?.note ?? '');
     _type = e?.type ?? AccountType.cash;
     _currency = e?.currencyCode ?? widget.defaultCurrency;
+    _archived = e?.archived ?? false;
   }
 
   static String _num(double? v) {
@@ -72,7 +74,7 @@ class _AccountEditorPageState extends State<AccountEditorPage> {
       currencyCode: _currency,
       openingBalance: double.tryParse(_opening.text.trim()) ?? 0,
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
-      archived: widget.existing?.archived ?? false,
+      archived: _archived,
     );
     Navigator.of(context).pop(account);
   }
@@ -193,6 +195,24 @@ class _AccountEditorPageState extends State<AccountEditorPage> {
               ],
             ),
           ),
+          if (editing) ...<Widget>[
+            const SizedBox(height: AppSpacing.lg),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: SwitchListTile(
+                value: _archived,
+                onChanged: (bool v) => setState(() => _archived = v),
+                secondary: const Icon(Icons.archive_outlined),
+                title: const Text(
+                  'Archive',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text(
+                  'Hide from the list and totals without deleting',
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.xl),
           FilledButton(
             onPressed: _canSave ? _save : null,

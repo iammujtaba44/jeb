@@ -135,6 +135,7 @@ final class RecurringLocalDataSourceImpl implements RecurringLocalDataSource {
               DbConstants.columnDate: due.millisecondsSinceEpoch,
               DbConstants.columnType: rule.type.storageValue,
               DbConstants.columnRecurringId: rule.id,
+              DbConstants.columnAccountId: rule.accountId,
               DbConstants.columnUpdatedAt: now,
               DbConstants.columnIsDeleted: 0,
             });

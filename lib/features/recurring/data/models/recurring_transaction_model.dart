@@ -18,6 +18,7 @@ final class RecurringTransactionModel extends RecurringTransaction {
     required this.updatedAt,
     super.endDate,
     super.note,
+    super.accountId,
     this.isDeleted = false,
   });
 
@@ -39,6 +40,7 @@ final class RecurringTransactionModel extends RecurringTransaction {
       nextDueDate: rule.nextDueDate,
       endDate: rule.endDate,
       note: rule.note,
+      accountId: rule.accountId,
       updatedAt: updatedAt,
     );
   }
@@ -63,6 +65,7 @@ final class RecurringTransactionModel extends RecurringTransaction {
       endDate:
           endMs == null ? null : DateTime.fromMillisecondsSinceEpoch(endMs),
       note: map[DbConstants.columnNote] as String?,
+      accountId: map[DbConstants.columnAccountId] as String?,
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         map[DbConstants.columnUpdatedAt] as int,
       ),
@@ -82,6 +85,7 @@ final class RecurringTransactionModel extends RecurringTransaction {
       DbConstants.columnStartDate: startDate.millisecondsSinceEpoch,
       DbConstants.columnNextDueDate: nextDueDate.millisecondsSinceEpoch,
       DbConstants.columnEndDate: endDate?.millisecondsSinceEpoch,
+      DbConstants.columnAccountId: accountId,
       DbConstants.columnUpdatedAt: updatedAt.millisecondsSinceEpoch,
       DbConstants.columnIsDeleted: isDeleted ? 1 : 0,
     };

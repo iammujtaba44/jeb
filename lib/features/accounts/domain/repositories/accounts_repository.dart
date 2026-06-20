@@ -4,6 +4,9 @@ import 'package:jeb/features/accounts/domain/entities/transfer.dart';
 
 abstract interface class AccountsRepository {
   ResultFuture<List<Account>> getAccounts();
+
+  /// Archived (hidden) accounts, kept out of [getAccounts] and balances.
+  ResultFuture<List<Account>> getArchivedAccounts();
   ResultVoid saveAccount(Account account);
   ResultVoid deleteAccount(String id);
 

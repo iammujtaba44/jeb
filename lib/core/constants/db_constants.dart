@@ -3,7 +3,7 @@ abstract final class DbConstants {
   const DbConstants._();
 
   static const String databaseName = 'jeb.db';
-  static const int databaseVersion = 8;
+  static const int databaseVersion = 9;
 
   // Tables
   static const String transactionsTable = 'transactions';
@@ -19,7 +19,8 @@ abstract final class DbConstants {
   static const String columnOpeningBalance = 'opening_balance';
   static const String columnArchived = 'archived';
 
-  /// On a transaction: the wallet/account it draws from or lands in (nullable).
+  /// On a transaction or recurring rule: the wallet/account it draws from or
+  /// lands in (nullable).
   static const String columnAccountId = 'account_id';
 
   // Transfer columns (reuses amount/date/note)

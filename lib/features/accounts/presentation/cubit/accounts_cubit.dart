@@ -15,6 +15,7 @@ part 'accounts_state.dart';
 class AccountsCubit extends Cubit<AccountsState> {
   AccountsCubit({
     required GetAccounts getAccounts,
+    required GetArchivedAccounts getArchivedAccounts,
     required SaveAccount saveAccount,
     required DeleteAccount deleteAccount,
     required GetAccountBalances getAccountBalances,
@@ -23,6 +24,7 @@ class AccountsCubit extends Cubit<AccountsState> {
     required DeleteTransfer deleteTransfer,
     required GetSettings getSettings,
   })  : _getAccounts = getAccounts,
+        _getArchivedAccounts = getArchivedAccounts,
         _saveAccount = saveAccount,
         _deleteAccount = deleteAccount,
         _getAccountBalances = getAccountBalances,
@@ -33,6 +35,7 @@ class AccountsCubit extends Cubit<AccountsState> {
         super(const AccountsState());
 
   final GetAccounts _getAccounts;
+  final GetArchivedAccounts _getArchivedAccounts;
   final SaveAccount _saveAccount;
   final DeleteAccount _deleteAccount;
   final GetAccountBalances _getAccountBalances;
@@ -44,6 +47,7 @@ class AccountsCubit extends Cubit<AccountsState> {
   Future<void> load() async {
     final settingsResult = await _getSettings(const NoParams());
     final accountsResult = await _getAccounts(const NoParams());
+    final archivedResult = await _getArchivedAccounts(const NoParams());
     final balancesResult = await _getAccountBalances(const NoParams());
     final transfersResult = await _getTransfers(const NoParams());
     if (isClosed) return;
@@ -54,6 +58,10 @@ class AccountsCubit extends Cubit<AccountsState> {
     );
     final List<Account> accounts =
         accountsResult.fold((_) => const <Account>[], (List<Account> a) => a);
+    final List<Account> archived = archivedResult.fold(
+      (_) => const <Account>[],
+      (List<Account> a) => a,
+    );
     final Map<String, double> balances = balancesResult.fold(
       (_) => const <String, double>{},
       (Map<String, double> b) => b,
@@ -77,6 +85,7 @@ class AccountsCubit extends Cubit<AccountsState> {
       AccountsState(
         isLoading: false,
         accounts: accounts,
+        archived: archived,
         balances: balances,
         transfers: transfers,
         currency: currency,

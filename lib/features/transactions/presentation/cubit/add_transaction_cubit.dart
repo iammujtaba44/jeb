@@ -176,6 +176,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
       nextDueDate: start,
       endDate: state.endDate,
       note: state.note.trim().isEmpty ? null : state.note.trim(),
+      accountId: state.accountId,
     );
   }
 }

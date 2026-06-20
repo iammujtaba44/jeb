@@ -11,6 +11,14 @@ final class GetAccounts extends UseCase<List<Account>, NoParams> {
   ResultFuture<List<Account>> call(NoParams params) => _repo.getAccounts();
 }
 
+final class GetArchivedAccounts extends UseCase<List<Account>, NoParams> {
+  const GetArchivedAccounts(this._repo);
+  final AccountsRepository _repo;
+  @override
+  ResultFuture<List<Account>> call(NoParams params) =>
+      _repo.getArchivedAccounts();
+}
+
 final class SaveAccount extends UseCase<void, Account> {
   const SaveAccount(this._repo);
   final AccountsRepository _repo;

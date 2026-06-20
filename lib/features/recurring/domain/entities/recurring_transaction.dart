@@ -18,6 +18,7 @@ class RecurringTransaction extends Equatable {
     required this.nextDueDate,
     this.endDate,
     this.note,
+    this.accountId,
   });
 
   final String id;
@@ -31,6 +32,9 @@ class RecurringTransaction extends Equatable {
   final DateTime? endDate;
   final String? note;
 
+  /// The account each generated occurrence is assigned to, or null.
+  final String? accountId;
+
   RecurringTransaction copyWith({
     double? amount,
     String? currencyCode,
@@ -41,6 +45,7 @@ class RecurringTransaction extends Equatable {
     DateTime? nextDueDate,
     DateTime? endDate,
     String? note,
+    String? accountId,
   }) {
     return RecurringTransaction(
       id: id,
@@ -53,6 +58,7 @@ class RecurringTransaction extends Equatable {
       nextDueDate: nextDueDate ?? this.nextDueDate,
       endDate: endDate ?? this.endDate,
       note: note ?? this.note,
+      accountId: accountId ?? this.accountId,
     );
   }
 
@@ -68,5 +74,6 @@ class RecurringTransaction extends Equatable {
         nextDueDate,
         endDate,
         note,
+        accountId,
       ];
 }

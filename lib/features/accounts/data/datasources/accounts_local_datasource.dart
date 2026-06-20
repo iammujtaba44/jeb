@@ -11,6 +11,9 @@ import 'package:sqflite/sqflite.dart';
 
 abstract interface class AccountsLocalDataSource {
   Future<List<AccountModel>> getAccounts();
+
+  /// Archived (hidden) accounts, kept out of [getAccounts] and balances.
+  Future<List<AccountModel>> getArchivedAccounts();
   Future<void> upsertAccount(Account account);
   Future<void> deleteAccount(String id);
 
@@ -46,6 +49,22 @@ final class AccountsLocalDataSourceImpl implements AccountsLocalDataSource {
       return rows.map(AccountModel.fromMap).toList();
     } catch (error) {
       throw CacheException('Failed to load accounts: $error');
+    }
+  }
+
+  @override
+  Future<List<AccountModel>> getArchivedAccounts() async {
+    try {
+      final db = await _appDatabase.database;
+      final rows = await db.query(
+        DbConstants.accountsTable,
+        where: '${DbConstants.columnIsDeleted} = 0 AND '
+            '${DbConstants.columnArchived} = 1',
+        orderBy: '${DbConstants.columnName} ASC',
+      );
+      return rows.map(AccountModel.fromMap).toList();
+    } catch (error) {
+      throw CacheException('Failed to load archived accounts: $error');
     }
   }
 

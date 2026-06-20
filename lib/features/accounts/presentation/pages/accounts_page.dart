@@ -70,6 +70,16 @@ class AccountsView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
+              if (state.archived.isNotEmpty) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                const _SectionLabel('Archived'),
+                const SizedBox(height: AppSpacing.sm),
+                for (final Account account in state.archived)
+                  _ArchivedTile(
+                    account: account,
+                    onTap: () => _editAccount(context, account),
+                  ),
+              ],
               if (state.transfers.isNotEmpty) ...<Widget>[
                 const SizedBox(height: AppSpacing.md),
                 const _SectionLabel('Recent transfers'),
@@ -282,6 +292,37 @@ class _AccountCard extends StatelessWidget {
             color: negative ? scheme.error : null,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ArchivedTile extends StatelessWidget {
+  const _ArchivedTile({required this.account, required this.onTap});
+
+  final Account account;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      dense: true,
+      onTap: onTap,
+      leading: Icon(
+        AccountTypeVisuals.icon(account.type),
+        color: scheme.onSurfaceVariant,
+        size: 22,
+      ),
+      title: Text(
+        account.name,
+        style: TextStyle(color: scheme.onSurfaceVariant),
+      ),
+      subtitle: const Text('Archived · tap to restore'),
+      trailing: Icon(
+        PhosphorIcons.caretRight(),
+        size: 16,
+        color: scheme.onSurfaceVariant,
       ),
     );
   }

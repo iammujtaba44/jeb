@@ -82,6 +82,16 @@ final class AppDatabase {
         // Column already present (table created fresh with the latest schema).
       }
     }
+    if (oldVersion < 9) {
+      try {
+        await db.execute(
+          'ALTER TABLE ${DbConstants.recurringTransactionsTable} '
+          'ADD COLUMN ${DbConstants.columnAccountId} TEXT',
+        );
+      } catch (_) {
+        // Column already present (table created fresh with the latest schema).
+      }
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
@@ -139,6 +149,7 @@ final class AppDatabase {
       '${DbConstants.columnStartDate} INTEGER NOT NULL, '
       '${DbConstants.columnNextDueDate} INTEGER NOT NULL, '
       '${DbConstants.columnEndDate} INTEGER, '
+      '${DbConstants.columnAccountId} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

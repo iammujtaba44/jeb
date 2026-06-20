@@ -26,6 +26,10 @@ final class AccountsRepositoryImpl implements AccountsRepository {
   ResultFuture<List<Account>> getAccounts() => _guard(_local.getAccounts);
 
   @override
+  ResultFuture<List<Account>> getArchivedAccounts() =>
+      _guard(_local.getArchivedAccounts);
+
+  @override
   ResultVoid saveAccount(Account account) =>
       _guard(() => _local.upsertAccount(account));
 
