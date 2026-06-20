@@ -74,6 +74,28 @@ void main() {
     });
   });
 
+  test('a List<Account> built from models is safe for firstWhere(orElse)', () {
+    // The datasource returns List<AccountModel>; the cubit must materialize a
+    // true List<Account> or firstWhere(orElse: () => Account) crashes on the
+    // reified element type (the transfer editor hit this).
+    final List<AccountModel> models = <AccountModel>[
+      AccountModel(
+        id: 'a',
+        name: 'Cash',
+        type: AccountType.cash,
+        currencyCode: 'PKR',
+        updatedAt: DateTime(2026, 1, 1),
+      ),
+    ];
+    final List<Account> accounts = List<Account>.from(models);
+
+    final Account picked = accounts.firstWhere(
+      (Account x) => x.id == 'missing',
+      orElse: () => accounts.first,
+    );
+    expect(picked.id, 'a');
+  });
+
   group('models round-trip through the map', () {
     test('AccountModel', () {
       final AccountModel back = AccountModel.fromMap(

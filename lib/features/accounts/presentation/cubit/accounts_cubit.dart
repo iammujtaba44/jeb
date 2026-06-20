@@ -57,10 +57,16 @@ class AccountsCubit extends Cubit<AccountsState> {
       (AppSettings s) => s.defaultCurrencyCode,
     );
     final List<Account> accounts =
-        accountsResult.fold((_) => const <Account>[], (List<Account> a) => a);
+        accountsResult.fold(
+      (_) => const <Account>[],
+      // Materialize a true List<Account> — the datasource hands back a
+      // List<AccountModel>, which would otherwise crash firstWhere(orElse:)
+      // callers (e.g. the transfer editor) on a covariance check.
+      (List<Account> a) => List<Account>.from(a),
+    );
     final List<Account> archived = archivedResult.fold(
       (_) => const <Account>[],
-      (List<Account> a) => a,
+      (List<Account> a) => List<Account>.from(a),
     );
     final Map<String, double> balances = balancesResult.fold(
       (_) => const <String, double>{},
@@ -68,7 +74,7 @@ class AccountsCubit extends Cubit<AccountsState> {
     );
     final List<Transfer> transfers = transfersResult.fold(
       (_) => const <Transfer>[],
-      (List<Transfer> t) => t,
+      (List<Transfer> t) => List<Transfer>.from(t),
     );
 
     // Net cash position across every account, in the home currency.
