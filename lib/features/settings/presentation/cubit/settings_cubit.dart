@@ -32,9 +32,9 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> load() async {
     final result = await _getSettings(const NoParams());
     await result.fold(
-      (_) async {},
+      (_) async => emit(state.copyWith(isLoaded: true)),
       (AppSettings settings) async {
-        emit(state.copyWith(settings: settings));
+        emit(state.copyWith(settings: settings, isLoaded: true));
         // Re-arm the reminder on launch (survives reboots / OS clearing it).
         if (settings.reminderEnabled) {
           await _notifications.scheduleDailyReminder(
@@ -44,6 +44,19 @@ class SettingsCubit extends Cubit<SettingsState> {
         }
       },
     );
+  }
+
+  /// Finishes first-run setup: stores the chosen currency + backup preference
+  /// and marks onboarding complete.
+  Future<void> completeOnboarding({
+    required String currencyCode,
+    required bool syncEnabled,
+  }) {
+    return _persist(state.settings.copyWith(
+      defaultCurrencyCode: currencyCode,
+      syncEnabled: syncEnabled,
+      onboardingComplete: true,
+    ));
   }
 
   Future<void> setThemeMode(AppThemeMode mode) =>

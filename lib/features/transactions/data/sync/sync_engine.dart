@@ -133,7 +133,11 @@ class SyncEngine {
     if (remote == null) return;
     final AppSettings local = await _settings.read();
     if (remote.updatedAtMs > local.updatedAtMs) {
-      await _settings.write(remote.copyWith(lastSyncedAt: local.lastSyncedAt));
+      // Keep this device's own onboarding flag + last-synced time.
+      await _settings.write(remote.copyWith(
+        lastSyncedAt: local.lastSyncedAt,
+        onboardingComplete: local.onboardingComplete,
+      ));
     }
   }
 

@@ -21,6 +21,7 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   static const String _keyReminderMinutes = 'settings.reminder_minutes';
   static const String _keyLastSynced = 'settings.last_synced_at';
   static const String _keyUpdatedAt = 'settings.updated_at';
+  static const String _keyOnboarding = 'settings.onboarding_complete';
 
   @override
   Future<AppSettings> read() async {
@@ -41,6 +42,10 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
             AppSettings.defaults.reminderEnabled,
         reminderMinutes: _prefs.getInt(_keyReminderMinutes) ??
             AppSettings.defaults.reminderMinutes,
+        // Treat existing installs (settings already saved) as onboarded, so
+        // only brand-new installs see the first-run setup.
+        onboardingComplete: _prefs.getBool(_keyOnboarding) ??
+            _prefs.containsKey(_keyCurrency),
         lastSyncedAt:
             lastMs == null ? null : DateTime.fromMillisecondsSinceEpoch(lastMs),
       );
@@ -58,6 +63,7 @@ final class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
       await _prefs.setBool(_keyAppLock, settings.appLockEnabled);
       await _prefs.setBool(_keyReminderEnabled, settings.reminderEnabled);
       await _prefs.setInt(_keyReminderMinutes, settings.reminderMinutes);
+      await _prefs.setBool(_keyOnboarding, settings.onboardingComplete);
       final DateTime? lastSynced = settings.lastSyncedAt;
       if (lastSynced != null) {
         await _prefs.setInt(_keyLastSynced, lastSynced.millisecondsSinceEpoch);

@@ -13,6 +13,7 @@ class AppSettings extends Equatable {
     this.reminderMinutes = 20 * 60, // 20:00
     this.lastSyncedAt,
     this.updatedAt,
+    this.onboardingComplete = false,
   });
 
   final String defaultCurrencyCode;
@@ -31,6 +32,10 @@ class AppSettings extends Equatable {
   /// When the preferences last changed — used for last-write-wins sync.
   /// Null is treated as the epoch (oldest).
   final DateTime? updatedAt;
+
+  /// Whether the first-run setup has been completed. Per-install (not synced),
+  /// so a restored device still onboards once.
+  final bool onboardingComplete;
 
   int get reminderHour => reminderMinutes ~/ 60;
   int get reminderMinute => reminderMinutes % 60;
@@ -52,6 +57,7 @@ class AppSettings extends Equatable {
     int? reminderMinutes,
     DateTime? lastSyncedAt,
     DateTime? updatedAt,
+    bool? onboardingComplete,
   }) {
     return AppSettings(
       defaultCurrencyCode: defaultCurrencyCode ?? this.defaultCurrencyCode,
@@ -62,6 +68,7 @@ class AppSettings extends Equatable {
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }
 
@@ -75,5 +82,6 @@ class AppSettings extends Equatable {
         reminderMinutes,
         lastSyncedAt,
         updatedAt,
+        onboardingComplete,
       ];
 }
