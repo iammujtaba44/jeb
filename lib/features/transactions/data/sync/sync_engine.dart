@@ -4,6 +4,9 @@ import 'package:jeb/core/constants/db_constants.dart';
 import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/budgets/data/datasources/budget_local_datasource.dart';
 import 'package:jeb/features/budgets/data/models/budget_model.dart';
+import 'package:jeb/features/plans/data/datasources/plans_local_datasource.dart';
+import 'package:jeb/features/plans/data/models/plan_model.dart';
+import 'package:jeb/features/plans/data/models/plan_payment_model.dart';
 import 'package:jeb/features/recurring/data/datasources/recurring_local_datasource.dart';
 import 'package:jeb/features/recurring/data/models/recurring_transaction_model.dart';
 import 'package:jeb/features/settings/data/datasources/settings_local_datasource.dart';
@@ -24,12 +27,14 @@ class SyncEngine {
     required TransactionLocalDataSource local,
     required BudgetLocalDataSource budgets,
     required RecurringLocalDataSource recurring,
+    required PlansLocalDataSource plans,
     required SettingsLocalDataSource settings,
     required ReceiptStore receipts,
     required CloudFileStore cloudFileStore,
   })  : _local = local,
         _budgets = budgets,
         _recurring = recurring,
+        _plans = plans,
         _settings = settings,
         _receipts = receipts,
         _cloudFileStore = cloudFileStore;
@@ -37,6 +42,7 @@ class SyncEngine {
   final TransactionLocalDataSource _local;
   final BudgetLocalDataSource _budgets;
   final RecurringLocalDataSource _recurring;
+  final PlansLocalDataSource _plans;
   final SettingsLocalDataSource _settings;
   final ReceiptStore _receipts;
   final CloudFileStore _cloudFileStore;
@@ -98,6 +104,27 @@ class SyncEngine {
       await _recurring.putRecurring(model);
     }
 
+    final List<PlanModel> plansToApply = SyncMerge.recordsToApply<PlanModel>(
+      local: await _plans.getAllPlansForSync(),
+      remote: remote.plans,
+      idOf: (PlanModel m) => m.id,
+      updatedAtOf: (PlanModel m) => m.updatedAt,
+    );
+    for (final PlanModel model in plansToApply) {
+      await _plans.putPlan(model);
+    }
+
+    final List<PlanPaymentModel> paymentsToApply =
+        SyncMerge.recordsToApply<PlanPaymentModel>(
+      local: await _plans.getAllPaymentsForSync(),
+      remote: remote.planPayments,
+      idOf: (PlanPaymentModel m) => m.id,
+      updatedAtOf: (PlanPaymentModel m) => m.updatedAt,
+    );
+    for (final PlanPaymentModel model in paymentsToApply) {
+      await _plans.putPayment(model);
+    }
+
     await _applySettings(remote.settings);
   }
 
@@ -116,6 +143,8 @@ class SyncEngine {
       categories: await _local.getAllCategoriesForSync(),
       budgets: await _budgets.getAllBudgetsForSync(),
       recurring: await _recurring.getAllRecurringForSync(),
+      plans: await _plans.getAllPlansForSync(),
+      planPayments: await _plans.getAllPaymentsForSync(),
       settings: await _settings.read(),
     );
     await _cloudFileStore.writeSnapshot(merged.toJson());

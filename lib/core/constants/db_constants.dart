@@ -3,13 +3,21 @@ abstract final class DbConstants {
   const DbConstants._();
 
   static const String databaseName = 'jeb.db';
-  static const int databaseVersion = 5;
+  static const int databaseVersion = 6;
 
   // Tables
   static const String transactionsTable = 'transactions';
   static const String categoriesTable = 'categories';
   static const String budgetsTable = 'budgets';
   static const String recurringTransactionsTable = 'recurring_transactions';
+  static const String plansTable = 'plans';
+  static const String planPaymentsTable = 'plan_payments';
+
+  // Plan columns (reuses name/currency/note/date[=start]/amount[=payment])
+  static const String columnKind = 'kind';
+  static const String columnTargetAmount = 'target_amount';
+  static const String columnInstallmentAmount = 'installment_amount';
+  static const String columnPlanId = 'plan_id';
 
   // Recurring-transaction columns (reuses amount/currency/category/type/note)
   static const String columnFrequency = 'frequency';

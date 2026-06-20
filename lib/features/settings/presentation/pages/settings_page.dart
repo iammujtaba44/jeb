@@ -8,6 +8,7 @@ import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/settings/domain/entities/app_theme_mode.dart';
 import 'package:jeb/features/settings/presentation/widgets/export_sheet.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:jeb/features/transactions/presentation/pages/categories_page.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Accent colors for the settings icon badges — each tile gets its own hue
@@ -21,6 +22,7 @@ abstract class _Accent {
   static const Color privacy = Color(0xFF059669); // emerald
   static const Color reminder = Color(0xFFE11D48); // rose
   static const Color export = Color(0xFF0891B2); // cyan
+  static const Color categories = Color(0xFF0EA5E9); // sky
 }
 
 class SettingsPage extends StatelessWidget {
@@ -43,6 +45,19 @@ class SettingsPage extends StatelessWidget {
                 children: <Widget>[
                   _CurrencyTile(
                     currencyCode: state.settings.defaultCurrencyCode,
+                  ),
+                  const _TileDivider(),
+                  _SettingsTile(
+                    icon: PhosphorIcons.tag(PhosphorIconsStyle.duotone),
+                    tint: _Accent.categories,
+                    title: 'Categories',
+                    subtitle: 'Create and customize categories',
+                    trailing: const _Chevron(),
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const CategoriesPage(),
+                      ),
+                    ),
                   ),
                   const _TileDivider(),
                   _ThemeTile(mode: state.settings.themeMode),

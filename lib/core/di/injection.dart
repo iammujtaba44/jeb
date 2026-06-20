@@ -13,6 +13,11 @@ import 'package:jeb/features/budgets/domain/usecases/remove_budget.dart';
 import 'package:jeb/features/budgets/domain/usecases/set_budget.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
 import 'package:jeb/features/insights/presentation/cubit/insights_cubit.dart';
+import 'package:jeb/features/plans/data/datasources/plans_local_datasource.dart';
+import 'package:jeb/features/plans/data/repositories/plans_repository_impl.dart';
+import 'package:jeb/features/plans/domain/repositories/plans_repository.dart';
+import 'package:jeb/features/plans/domain/usecases/plans_usecases.dart';
+import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/recurring/data/datasources/recurring_local_datasource.dart';
 import 'package:jeb/features/recurring/data/repositories/recurring_repository_impl.dart';
 import 'package:jeb/features/recurring/domain/repositories/recurring_repository.dart';
@@ -80,6 +85,7 @@ Future<void> configureDependencies() async {
       local: getIt<TransactionLocalDataSource>(),
       budgets: getIt<BudgetLocalDataSource>(),
       recurring: getIt<RecurringLocalDataSource>(),
+      plans: getIt<PlansLocalDataSource>(),
       settings: getIt<SettingsLocalDataSource>(),
       receipts: getIt<ReceiptStore>(),
       cloudFileStore: getIt<CloudFileStore>(),
@@ -148,6 +154,32 @@ Future<void> configureDependencies() async {
       () => MaterializeDueTransactions(getIt<RecurringRepository>()),
     );
 
+  // ── Plans feature ────────────────────────────────────────────────────
+  getIt
+    ..registerLazySingleton<PlansLocalDataSource>(
+      () => PlansLocalDataSourceImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<PlansRepository>(
+      () => PlansRepositoryImpl(getIt<PlansLocalDataSource>()),
+    )
+    ..registerLazySingleton<GetPlans>(() => GetPlans(getIt<PlansRepository>()))
+    ..registerLazySingleton<SavePlan>(() => SavePlan(getIt<PlansRepository>()))
+    ..registerLazySingleton<DeletePlan>(
+      () => DeletePlan(getIt<PlansRepository>()),
+    )
+    ..registerLazySingleton<PaidByPlan>(
+      () => PaidByPlan(getIt<PlansRepository>()),
+    )
+    ..registerLazySingleton<GetPlanPayments>(
+      () => GetPlanPayments(getIt<PlansRepository>()),
+    )
+    ..registerLazySingleton<AddPlanPayment>(
+      () => AddPlanPayment(getIt<PlansRepository>()),
+    )
+    ..registerLazySingleton<DeletePlanPayment>(
+      () => DeletePlanPayment(getIt<PlansRepository>()),
+    );
+
   // ── Domain: use cases ────────────────────────────────────────────────
   getIt
     ..registerLazySingleton<GetTransactionsForMonth>(
@@ -205,6 +237,17 @@ Future<void> configureDependencies() async {
         getCategories: getIt<GetCategories>(),
         getBudgets: getIt<GetBudgets>(),
         getSettings: getIt<GetSettings>(),
+      ),
+    )
+    ..registerFactory<PlansCubit>(
+      () => PlansCubit(
+        getPlans: getIt<GetPlans>(),
+        savePlan: getIt<SavePlan>(),
+        deletePlan: getIt<DeletePlan>(),
+        paidByPlan: getIt<PaidByPlan>(),
+        getPlanPayments: getIt<GetPlanPayments>(),
+        addPlanPayment: getIt<AddPlanPayment>(),
+        deletePlanPayment: getIt<DeletePlanPayment>(),
       ),
     )
     ..registerFactory<CategoriesCubit>(

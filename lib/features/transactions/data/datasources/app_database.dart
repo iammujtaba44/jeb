@@ -29,6 +29,8 @@ final class AppDatabase {
     await db.execute(_createCategoriesTableSql);
     await db.execute(_createBudgetsTableSql);
     await db.execute(_createRecurringTransactionsTableSql);
+    await db.execute(_createPlansTableSql);
+    await db.execute(_createPlanPaymentsTableSql);
     await _seedCategories(db);
   }
 
@@ -50,6 +52,10 @@ final class AppDatabase {
         'ALTER TABLE ${DbConstants.transactionsTable} '
         'ADD COLUMN ${DbConstants.columnReceiptPath} TEXT',
       );
+    }
+    if (oldVersion < 6) {
+      await db.execute(_createPlansTableSql);
+      await db.execute(_createPlanPaymentsTableSql);
     }
   }
 
@@ -107,6 +113,31 @@ final class AppDatabase {
       '${DbConstants.columnStartDate} INTEGER NOT NULL, '
       '${DbConstants.columnNextDueDate} INTEGER NOT NULL, '
       '${DbConstants.columnEndDate} INTEGER, '
+      '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
+      '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
+      ')';
+
+  static const String _createPlansTableSql =
+      'CREATE TABLE ${DbConstants.plansTable} ('
+      '${DbConstants.columnId} TEXT PRIMARY KEY, '
+      '${DbConstants.columnName} TEXT NOT NULL, '
+      '${DbConstants.columnKind} TEXT NOT NULL, '
+      '${DbConstants.columnTargetAmount} REAL, '
+      '${DbConstants.columnInstallmentAmount} REAL, '
+      '${DbConstants.columnCurrencyCode} TEXT NOT NULL, '
+      '${DbConstants.columnNote} TEXT, '
+      '${DbConstants.columnDate} INTEGER NOT NULL, '
+      '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
+      '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
+      ')';
+
+  static const String _createPlanPaymentsTableSql =
+      'CREATE TABLE ${DbConstants.planPaymentsTable} ('
+      '${DbConstants.columnId} TEXT PRIMARY KEY, '
+      '${DbConstants.columnPlanId} TEXT NOT NULL, '
+      '${DbConstants.columnAmount} REAL NOT NULL, '
+      '${DbConstants.columnDate} INTEGER NOT NULL, '
+      '${DbConstants.columnNote} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

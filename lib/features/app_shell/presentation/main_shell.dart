@@ -4,18 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/features/budgets/presentation/pages/budgets_page.dart';
+import 'package:jeb/features/plans/presentation/pages/plans_page.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/settings/presentation/pages/settings_page.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/usecases/get_categories.dart';
 import 'package:jeb/features/transactions/presentation/cubit/transactions_cubit.dart';
 import 'package:jeb/features/transactions/presentation/pages/add_transaction_page.dart';
-import 'package:jeb/features/transactions/presentation/pages/categories_page.dart';
 import 'package:jeb/features/transactions/presentation/pages/home_page.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// App shell with a bottom navigation bar and a docked center "Add" button.
-/// Hosts the primary destinations: Home · Budgets · Categories · Settings.
+/// Hosts the primary destinations: Home · Budgets · Plans · Settings.
 class MainShell extends StatelessWidget {
   const MainShell({super.key});
 
@@ -41,7 +41,7 @@ class _ShellScaffoldState extends State<_ShellScaffold> {
   static const List<Widget> _pages = <Widget>[
     HomeView(),
     BudgetsPage(),
-    CategoriesPage(),
+    PlansPage(),
     SettingsPage(),
   ];
 
@@ -115,9 +115,9 @@ class _ShellScaffoldState extends State<_ShellScaffold> {
             const Expanded(child: SizedBox()),
             Expanded(
               child: _NavItem(
-                icon: PhosphorIcons.tag(),
-                activeIcon: PhosphorIcons.tag(PhosphorIconsStyle.fill),
-                label: 'Categories',
+                icon: PhosphorIcons.target(),
+                activeIcon: PhosphorIcons.target(PhosphorIconsStyle.fill),
+                label: 'Plans',
                 selected: _index == 2,
                 onTap: () => _select(2),
               ),
