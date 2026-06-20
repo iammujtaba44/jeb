@@ -31,6 +31,8 @@ final class AppDatabase {
     await db.execute(_createRecurringTransactionsTableSql);
     await db.execute(_createPlansTableSql);
     await db.execute(_createPlanPaymentsTableSql);
+    await db.execute(_createAccountsTableSql);
+    await db.execute(_createTransfersTableSql);
     await _seedCategories(db);
   }
 
@@ -68,6 +70,18 @@ final class AppDatabase {
         // Column already present (table created fresh with the latest schema).
       }
     }
+    if (oldVersion < 8) {
+      await db.execute(_createAccountsTableSql);
+      await db.execute(_createTransfersTableSql);
+      try {
+        await db.execute(
+          'ALTER TABLE ${DbConstants.transactionsTable} '
+          'ADD COLUMN ${DbConstants.columnAccountId} TEXT',
+        );
+      } catch (_) {
+        // Column already present (table created fresh with the latest schema).
+      }
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
@@ -89,6 +103,7 @@ final class AppDatabase {
       '${DbConstants.columnType} TEXT NOT NULL, '
       '${DbConstants.columnRecurringId} TEXT, '
       '${DbConstants.columnReceiptPath} TEXT, '
+      '${DbConstants.columnAccountId} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';
@@ -150,6 +165,31 @@ final class AppDatabase {
       '${DbConstants.columnDate} INTEGER NOT NULL, '
       '${DbConstants.columnNote} TEXT, '
       '${DbConstants.columnReceiptPaths} TEXT, '
+      '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
+      '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
+      ')';
+
+  static const String _createAccountsTableSql =
+      'CREATE TABLE ${DbConstants.accountsTable} ('
+      '${DbConstants.columnId} TEXT PRIMARY KEY, '
+      '${DbConstants.columnName} TEXT NOT NULL, '
+      '${DbConstants.columnType} TEXT NOT NULL, '
+      '${DbConstants.columnCurrencyCode} TEXT NOT NULL, '
+      '${DbConstants.columnOpeningBalance} REAL NOT NULL DEFAULT 0, '
+      '${DbConstants.columnNote} TEXT, '
+      '${DbConstants.columnArchived} INTEGER NOT NULL DEFAULT 0, '
+      '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
+      '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
+      ')';
+
+  static const String _createTransfersTableSql =
+      'CREATE TABLE ${DbConstants.transfersTable} ('
+      '${DbConstants.columnId} TEXT PRIMARY KEY, '
+      '${DbConstants.columnFromAccountId} TEXT NOT NULL, '
+      '${DbConstants.columnToAccountId} TEXT NOT NULL, '
+      '${DbConstants.columnAmount} REAL NOT NULL, '
+      '${DbConstants.columnDate} INTEGER NOT NULL, '
+      '${DbConstants.columnNote} TEXT, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

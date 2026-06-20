@@ -3,6 +3,7 @@ import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/services/export_service.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/usecase/usecase.dart';
+import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/search_criteria.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
@@ -60,7 +61,6 @@ class _ExportSheetState extends State<_ExportSheet> {
     if (_busy) return;
     setState(() => _busy = true);
     final NavigatorState navigator = Navigator.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
 
     final DateTime now = DateTime.now();
     final SearchCriteria criteria =
@@ -75,9 +75,7 @@ class _ExportSheetState extends State<_ExportSheet> {
     if (transactions.isEmpty) {
       if (!mounted) return;
       setState(() => _busy = false);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No transactions in that range')),
-      );
+      AppSnackbar.show(context, 'No transactions in that range');
       return;
     }
 

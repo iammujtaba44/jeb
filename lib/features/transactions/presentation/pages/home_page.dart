@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/features/insights/presentation/pages/insights_page.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
@@ -239,15 +240,10 @@ void _handleDelete(BuildContext context, Transaction transaction) {
   final TransactionsCubit cubit = context.read<TransactionsCubit>();
   HapticFeedback.mediumImpact();
   cubit.deleteTransaction(transaction.id);
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: const Text('Transaction deleted'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => cubit.restore(transaction),
-        ),
-      ),
-    );
+  AppSnackbar.show(
+    context,
+    'Transaction deleted',
+    actionLabel: 'Undo',
+    onAction: () => cubit.restore(transaction),
+  );
 }

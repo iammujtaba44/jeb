@@ -4,8 +4,19 @@ import 'package:jeb/features/plans/data/models/plan_model.dart';
 import 'package:jeb/features/plans/data/models/plan_payment_model.dart';
 import 'package:jeb/features/plans/domain/entities/plan.dart';
 import 'package:jeb/features/plans/domain/entities/plan_kind.dart';
+import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 
 void main() {
+  test('PlansState.netWorth is assets minus liabilities', () {
+    const PlansState s = PlansState(
+      isLoading: false,
+      totalAssets: 2800000,
+      totalLiabilities: 1000000,
+      hasNetWorth: true,
+    );
+    expect(s.netWorth, 1800000);
+  });
+
   Plan plan({double? target, double? installment}) => Plan(
         id: 'p1',
         name: 'House',

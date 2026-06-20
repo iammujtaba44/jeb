@@ -125,4 +125,22 @@ class SettingsCubit extends Cubit<SettingsState> {
       },
     );
   }
+
+  /// Silent backup when the app is backgrounded — captures changes as the user
+  /// leaves, without changing [SyncStatus] (so no snackbar fires).
+  Future<void> backupOnBackground() async {
+    if (!state.settings.syncEnabled || state.syncStatus == SyncStatus.syncing) {
+      return;
+    }
+    final result = await _syncData(const NoParams());
+    await result.fold(
+      (_) async {},
+      (_) async {
+        final AppSettings updated =
+            state.settings.copyWith(lastSyncedAt: DateTime.now());
+        await _saveSettings(updated);
+        if (!isClosed) emit(state.copyWith(settings: updated));
+      },
+    );
+  }
 }

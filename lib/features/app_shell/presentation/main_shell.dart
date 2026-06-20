@@ -35,8 +35,30 @@ class _ShellScaffold extends StatefulWidget {
   State<_ShellScaffold> createState() => _ShellScaffoldState();
 }
 
-class _ShellScaffoldState extends State<_ShellScaffold> {
+class _ShellScaffoldState extends State<_ShellScaffold>
+    with WidgetsBindingObserver {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back up as the user leaves the app (in addition to the on-open sync).
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      context.read<SettingsCubit>().backupOnBackground();
+    }
+  }
 
   static const List<Widget> _pages = <Widget>[
     HomeView(),

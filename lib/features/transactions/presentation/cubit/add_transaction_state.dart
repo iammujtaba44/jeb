@@ -13,6 +13,8 @@ final class AddTransactionState extends Equatable {
     this.editingId,
     this.recurringId,
     this.receiptPath,
+    this.accountId,
+    this.accounts = const <Account>[],
     this.repeat = false,
     this.frequency = RecurrenceFrequency.monthly,
     this.endDate,
@@ -33,6 +35,13 @@ final class AddTransactionState extends Equatable {
 
   /// Relative path of an attached receipt photo, or null.
   final String? receiptPath;
+
+  /// The account this transaction is assigned to, or null when unassigned.
+  final String? accountId;
+
+  /// The user's accounts, used to offer an account picker. Empty when the user
+  /// hasn't set any up.
+  final List<Account> accounts;
 
   bool get hasReceipt => receiptPath != null;
 
@@ -67,6 +76,9 @@ final class AddTransactionState extends Equatable {
     bool clearEndDate = false,
     String? receiptPath,
     bool clearReceipt = false,
+    String? accountId,
+    bool clearAccount = false,
+    List<Account>? accounts,
     DateTime? date,
     AddTransactionStatus? status,
     String? errorMessage,
@@ -81,6 +93,8 @@ final class AddTransactionState extends Equatable {
       editingId: editingId,
       recurringId: recurringId,
       receiptPath: clearReceipt ? null : (receiptPath ?? this.receiptPath),
+      accountId: clearAccount ? null : (accountId ?? this.accountId),
+      accounts: accounts ?? this.accounts,
       repeat: repeat ?? this.repeat,
       frequency: frequency ?? this.frequency,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
@@ -100,6 +114,8 @@ final class AddTransactionState extends Equatable {
         editingId,
         recurringId,
         receiptPath,
+        accountId,
+        accounts,
         repeat,
         frequency,
         endDate,

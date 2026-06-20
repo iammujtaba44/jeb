@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/currencies.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/core/widgets/currency_picker_sheet.dart';
 import 'package:jeb/core/widgets/icon_badge.dart';
+import 'package:jeb/features/accounts/presentation/pages/accounts_page.dart';
 import 'package:jeb/features/settings/domain/entities/app_theme_mode.dart';
 import 'package:jeb/features/settings/presentation/widgets/export_sheet.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
@@ -23,6 +25,7 @@ abstract class _Accent {
   static const Color reminder = Color(0xFFE11D48); // rose
   static const Color export = Color(0xFF0891B2); // cyan
   static const Color categories = Color(0xFF0EA5E9); // sky
+  static const Color accounts = Color(0xFFEA580C); // orange
 }
 
 class SettingsPage extends StatelessWidget {
@@ -40,6 +43,24 @@ class SettingsPage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: <Widget>[
+              const _SectionLabel('Money'),
+              _SettingsCard(
+                children: <Widget>[
+                  _SettingsTile(
+                    icon: PhosphorIcons.wallet(PhosphorIconsStyle.duotone),
+                    tint: _Accent.accounts,
+                    title: 'Accounts & wallets',
+                    subtitle: 'Cash, bank, and card balances + transfers',
+                    trailing: const _Chevron(),
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AccountsPage(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
               const _SectionLabel('Preferences'),
               _SettingsCard(
                 children: <Widget>[
@@ -132,14 +153,13 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _onSyncStatusChanged(BuildContext context, SettingsState state) {
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
     if (state.syncStatus == SyncStatus.success) {
-      messenger.showSnackBar(const SnackBar(content: Text('Backed up ✓')));
+      AppSnackbar.show(context, 'Backed up', type: SnackType.success);
     } else if (state.syncStatus == SyncStatus.failure) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(state.errorMessage ?? 'Backup failed — check iCloud'),
-        ),
+      AppSnackbar.show(
+        context,
+        state.errorMessage ?? 'Backup failed — check iCloud',
+        type: SnackType.error,
       );
     }
   }

@@ -46,14 +46,18 @@ class PlansView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (state.plans.isEmpty) return const _EmptyState();
-          return ListView.separated(
+          return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: state.plans.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (BuildContext context, int index) {
-              final Plan plan = state.plans[index];
-              return _PlanCard(plan: plan, paid: state.paidFor(plan.id));
-            },
+            children: <Widget>[
+              if (state.hasNetWorth) ...<Widget>[
+                _NetWorthCard(state: state),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              for (final Plan plan in state.plans) ...<Widget>[
+                _PlanCard(plan: plan, paid: state.paidFor(plan.id)),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ],
           );
         },
       ),
@@ -71,6 +75,107 @@ Future<void> _newPlan(BuildContext context) async {
     ),
   );
   if (plan != null) await cubit.savePlan(plan);
+}
+
+class _NetWorthCard extends StatelessWidget {
+  const _NetWorthCard({required this.state});
+
+  final PlansState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final String cur = state.currency;
+    final bool positive = state.netWorth >= 0;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            scheme.primary,
+            Color.alphaBlend(
+              scheme.tertiary.withValues(alpha: 0.45),
+              scheme.primary,
+            ),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Net position',
+            style: textTheme.labelMedium?.copyWith(
+              color: scheme.onPrimary.withValues(alpha: 0.85),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '${positive ? '' : '-'}${MoneyFormatter.compact(state.netWorth.abs(), cur)}',
+            style: textTheme.displaySmall?.copyWith(
+              color: scheme.onPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _NetStat(
+                  label: 'Assets',
+                  value: MoneyFormatter.compact(state.totalAssets, cur),
+                ),
+              ),
+              Expanded(
+                child: _NetStat(
+                  label: 'Owed',
+                  value: MoneyFormatter.compact(state.totalLiabilities, cur),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NetStat extends StatelessWidget {
+  const _NetStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label.toUpperCase(),
+          style: textTheme.labelSmall?.copyWith(
+            color: scheme.onPrimary.withValues(alpha: 0.8),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: textTheme.titleMedium?.copyWith(
+            color: scheme.onPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _PlanCard extends StatelessWidget {

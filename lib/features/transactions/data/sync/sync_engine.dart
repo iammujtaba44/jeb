@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:jeb/core/constants/db_constants.dart';
 import 'package:jeb/core/services/receipt_store.dart';
+import 'package:jeb/features/accounts/data/datasources/accounts_local_datasource.dart';
+import 'package:jeb/features/accounts/data/models/account_model.dart';
+import 'package:jeb/features/accounts/data/models/transfer_model.dart';
 import 'package:jeb/features/budgets/data/datasources/budget_local_datasource.dart';
 import 'package:jeb/features/budgets/data/models/budget_model.dart';
 import 'package:jeb/features/plans/data/datasources/plans_local_datasource.dart';
@@ -28,6 +31,7 @@ class SyncEngine {
     required BudgetLocalDataSource budgets,
     required RecurringLocalDataSource recurring,
     required PlansLocalDataSource plans,
+    required AccountsLocalDataSource accounts,
     required SettingsLocalDataSource settings,
     required ReceiptStore receipts,
     required CloudFileStore cloudFileStore,
@@ -35,6 +39,7 @@ class SyncEngine {
         _budgets = budgets,
         _recurring = recurring,
         _plans = plans,
+        _accounts = accounts,
         _settings = settings,
         _receipts = receipts,
         _cloudFileStore = cloudFileStore;
@@ -43,6 +48,7 @@ class SyncEngine {
   final BudgetLocalDataSource _budgets;
   final RecurringLocalDataSource _recurring;
   final PlansLocalDataSource _plans;
+  final AccountsLocalDataSource _accounts;
   final SettingsLocalDataSource _settings;
   final ReceiptStore _receipts;
   final CloudFileStore _cloudFileStore;
@@ -125,6 +131,28 @@ class SyncEngine {
       await _plans.putPayment(model);
     }
 
+    final List<AccountModel> accountsToApply =
+        SyncMerge.recordsToApply<AccountModel>(
+      local: await _accounts.getAllAccountsForSync(),
+      remote: remote.accounts,
+      idOf: (AccountModel m) => m.id,
+      updatedAtOf: (AccountModel m) => m.updatedAt,
+    );
+    for (final AccountModel model in accountsToApply) {
+      await _accounts.putAccount(model);
+    }
+
+    final List<TransferModel> transfersToApply =
+        SyncMerge.recordsToApply<TransferModel>(
+      local: await _accounts.getAllTransfersForSync(),
+      remote: remote.transfers,
+      idOf: (TransferModel m) => m.id,
+      updatedAtOf: (TransferModel m) => m.updatedAt,
+    );
+    for (final TransferModel model in transfersToApply) {
+      await _accounts.putTransfer(model);
+    }
+
     await _applySettings(remote.settings);
   }
 
@@ -149,6 +177,8 @@ class SyncEngine {
       recurring: await _recurring.getAllRecurringForSync(),
       plans: await _plans.getAllPlansForSync(),
       planPayments: await _plans.getAllPaymentsForSync(),
+      accounts: await _accounts.getAllAccountsForSync(),
+      transfers: await _accounts.getAllTransfersForSync(),
       settings: await _settings.read(),
     );
     await _cloudFileStore.writeSnapshot(merged.toJson());

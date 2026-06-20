@@ -18,6 +18,7 @@ final class TransactionModel extends Transaction {
     super.note,
     super.recurringId,
     super.receiptPath,
+    super.accountId,
   });
 
   final DateTime updatedAt;
@@ -38,6 +39,7 @@ final class TransactionModel extends Transaction {
       note: entity.note,
       recurringId: entity.recurringId,
       receiptPath: entity.receiptPath,
+      accountId: entity.accountId,
       updatedAt: updatedAt,
       isDeleted: isDeleted,
     );
@@ -56,6 +58,7 @@ final class TransactionModel extends Transaction {
       note: map[DbConstants.columnNote] as String?,
       recurringId: map[DbConstants.columnRecurringId] as String?,
       receiptPath: map[DbConstants.columnReceiptPath] as String?,
+      accountId: map[DbConstants.columnAccountId] as String?,
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         map[DbConstants.columnUpdatedAt] as int,
       ),
@@ -74,6 +77,7 @@ final class TransactionModel extends Transaction {
       DbConstants.columnNote: note,
       DbConstants.columnRecurringId: recurringId,
       DbConstants.columnReceiptPath: receiptPath,
+      DbConstants.columnAccountId: accountId,
       DbConstants.columnUpdatedAt: updatedAt.millisecondsSinceEpoch,
       DbConstants.columnIsDeleted: isDeleted ? 1 : 0,
     };

@@ -14,6 +14,7 @@ class Transaction extends Equatable {
     this.note,
     this.recurringId,
     this.receiptPath,
+    this.accountId,
   });
 
   final String id;
@@ -32,6 +33,10 @@ class Transaction extends Equatable {
   /// or null if none.
   final String? receiptPath;
 
+  /// The wallet/account this transaction draws from or lands in, or null when
+  /// it isn't tied to a specific account.
+  final String? accountId;
+
   bool get isRecurring => recurringId != null;
   bool get hasReceipt => receiptPath != null;
 
@@ -46,5 +51,6 @@ class Transaction extends Equatable {
         note,
         recurringId,
         receiptPath,
+        accountId,
       ];
 }

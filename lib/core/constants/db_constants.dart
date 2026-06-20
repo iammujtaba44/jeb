@@ -3,7 +3,7 @@ abstract final class DbConstants {
   const DbConstants._();
 
   static const String databaseName = 'jeb.db';
-  static const int databaseVersion = 7;
+  static const int databaseVersion = 8;
 
   // Tables
   static const String transactionsTable = 'transactions';
@@ -12,6 +12,19 @@ abstract final class DbConstants {
   static const String recurringTransactionsTable = 'recurring_transactions';
   static const String plansTable = 'plans';
   static const String planPaymentsTable = 'plan_payments';
+  static const String accountsTable = 'accounts';
+  static const String transfersTable = 'transfers';
+
+  // Account columns (reuses name/currency/note/type)
+  static const String columnOpeningBalance = 'opening_balance';
+  static const String columnArchived = 'archived';
+
+  /// On a transaction: the wallet/account it draws from or lands in (nullable).
+  static const String columnAccountId = 'account_id';
+
+  // Transfer columns (reuses amount/date/note)
+  static const String columnFromAccountId = 'from_account_id';
+  static const String columnToAccountId = 'to_account_id';
 
   // Plan columns (reuses name/currency/note/date[=start]/amount[=payment])
   static const String columnKind = 'kind';

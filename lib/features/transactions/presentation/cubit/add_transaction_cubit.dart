@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/app_constants.dart';
+import 'package:jeb/core/usecase/usecase.dart';
+import 'package:jeb/features/accounts/domain/entities/account.dart';
+import 'package:jeb/features/accounts/domain/usecases/accounts_usecases.dart';
 import 'package:jeb/features/recurring/domain/entities/recurrence_frequency.dart';
 import 'package:jeb/features/recurring/domain/entities/recurring_transaction.dart';
 import 'package:jeb/features/recurring/domain/usecases/delete_recurring_transaction.dart';
@@ -20,16 +23,19 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
     required AddTransaction addTransaction,
     required SaveRecurringTransaction saveRecurringTransaction,
     required DeleteRecurringTransaction deleteRecurringTransaction,
+    required GetAccounts getAccounts,
     required Uuid uuid,
   })  : _addTransaction = addTransaction,
         _saveRecurringTransaction = saveRecurringTransaction,
         _deleteRecurringTransaction = deleteRecurringTransaction,
+        _getAccounts = getAccounts,
         _uuid = uuid,
         super(AddTransactionState(date: DateTime.now()));
 
   final AddTransaction _addTransaction;
   final SaveRecurringTransaction _saveRecurringTransaction;
   final DeleteRecurringTransaction _deleteRecurringTransaction;
+  final GetAccounts _getAccounts;
   final Uuid _uuid;
 
   /// Seed the form — either blank (with the user's default currency) or
@@ -50,9 +56,27 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
         editingId: existing.id,
         recurringId: existing.recurringId,
         receiptPath: existing.receiptPath,
+        accountId: existing.accountId,
+        accounts: state.accounts,
       ),
     );
   }
+
+  /// Loads the user's accounts so the form can offer an account picker. Safe to
+  /// call before or after [initialize]; merges into the current state.
+  Future<void> loadAccounts() async {
+    final result = await _getAccounts(const NoParams());
+    if (isClosed) return;
+    final List<Account> accounts =
+        result.fold((_) => const <Account>[], (List<Account> a) => a);
+    emit(state.copyWith(accounts: accounts));
+  }
+
+  void accountSelected(String? accountId) => emit(
+        accountId == null
+            ? state.copyWith(clearAccount: true)
+            : state.copyWith(accountId: accountId),
+      );
 
   void amountChanged(double amount) =>
       emit(state.copyWith(amount: amount, status: AddTransactionStatus.editing));
@@ -135,6 +159,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
         note: state.note.trim().isEmpty ? null : state.note.trim(),
         recurringId: state.recurringId,
         receiptPath: state.receiptPath,
+        accountId: state.accountId,
       );
 
   RecurringTransaction _buildRule() {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
+import 'package:jeb/core/widgets/app_snackbar.dart';
+import 'package:jeb/features/accounts/domain/entities/account.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 import 'package:jeb/features/transactions/presentation/cubit/add_transaction_cubit.dart';
@@ -31,6 +33,7 @@ class AddTransactionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<AddTransactionCubit>(
       create: (_) => getIt<AddTransactionCubit>()
+        ..loadAccounts()
         ..initialize(existing: transaction, defaultCurrency: defaultCurrency),
       child: AddTransactionView(
         categories: categories,
@@ -97,6 +100,7 @@ class AddTransactionView extends StatelessWidget {
                 ],
               ),
             ),
+            const _AccountSection(),
             const SizedBox(height: AppSpacing.lg),
             const RepeatSection(),
             const SizedBox(height: AppSpacing.lg),
@@ -115,13 +119,59 @@ class AddTransactionView extends StatelessWidget {
       case AddTransactionStatus.success:
         Navigator.of(context).pop(true);
       case AddTransactionStatus.failure:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.errorMessage ?? 'Could not save')),
+        AppSnackbar.show(
+          context,
+          state.errorMessage ?? 'Could not save',
+          type: SnackType.error,
         );
       case AddTransactionStatus.editing:
       case AddTransactionStatus.submitting:
         break;
     }
+  }
+}
+
+/// Optional account picker — only shows once the user has set up accounts.
+/// Renders a row of choice chips ("None" + each account) above the repeat
+/// section so a transaction can be attributed to a wallet.
+class _AccountSection extends StatelessWidget {
+  const _AccountSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddTransactionCubit, AddTransactionState>(
+      buildWhen: (AddTransactionState p, AddTransactionState c) =>
+          p.accounts != c.accounts || p.accountId != c.accountId,
+      builder: (BuildContext context, AddTransactionState state) {
+        if (state.accounts.isEmpty) return const SizedBox.shrink();
+        final AddTransactionCubit cubit = context.read<AddTransactionCubit>();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const SizedBox(height: AppSpacing.lg),
+            const _FieldLabel(text: 'Account'),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: <Widget>[
+                ChoiceChip(
+                  label: const Text('None'),
+                  selected: state.accountId == null,
+                  onSelected: (_) => cubit.accountSelected(null),
+                ),
+                for (final Account a in state.accounts)
+                  ChoiceChip(
+                    label: Text(a.name),
+                    selected: state.accountId == a.id,
+                    onSelected: (_) => cubit.accountSelected(a.id),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

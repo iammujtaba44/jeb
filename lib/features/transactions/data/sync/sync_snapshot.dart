@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:jeb/core/utils/typedefs.dart';
+import 'package:jeb/features/accounts/data/models/account_model.dart';
+import 'package:jeb/features/accounts/data/models/transfer_model.dart';
 import 'package:jeb/features/budgets/data/models/budget_model.dart';
 import 'package:jeb/features/plans/data/models/plan_model.dart';
 import 'package:jeb/features/plans/data/models/plan_payment_model.dart';
@@ -19,6 +21,8 @@ class SyncSnapshot {
     this.recurring = const <RecurringTransactionModel>[],
     this.plans = const <PlanModel>[],
     this.planPayments = const <PlanPaymentModel>[],
+    this.accounts = const <AccountModel>[],
+    this.transfers = const <TransferModel>[],
     this.settings,
   });
 
@@ -28,11 +32,13 @@ class SyncSnapshot {
   final List<RecurringTransactionModel> recurring;
   final List<PlanModel> plans;
   final List<PlanPaymentModel> planPayments;
+  final List<AccountModel> accounts;
+  final List<TransferModel> transfers;
 
   /// User preferences (excludes device-specific [AppSettings.lastSyncedAt]).
   final AppSettings? settings;
 
-  static const int currentVersion = 4;
+  static const int currentVersion = 5;
   static const String _versionKey = 'version';
   static const String _transactionsKey = 'transactions';
   static const String _categoriesKey = 'categories';
@@ -40,6 +46,8 @@ class SyncSnapshot {
   static const String _recurringKey = 'recurring';
   static const String _plansKey = 'plans';
   static const String _planPaymentsKey = 'planPayments';
+  static const String _accountsKey = 'accounts';
+  static const String _transfersKey = 'transfers';
   static const String _settingsKey = 'settings';
 
   factory SyncSnapshot.empty() => const SyncSnapshot(
@@ -62,6 +70,8 @@ class SyncSnapshot {
       recurring: parse(_recurringKey, RecurringTransactionModel.fromMap),
       plans: parse(_plansKey, PlanModel.fromMap),
       planPayments: parse(_planPaymentsKey, PlanPaymentModel.fromMap),
+      accounts: parse(_accountsKey, AccountModel.fromMap),
+      transfers: parse(_transfersKey, TransferModel.fromMap),
       settings: _settingsFromMap(map[_settingsKey] as DataMap?),
     );
   }
@@ -78,6 +88,8 @@ class SyncSnapshot {
       _plansKey: plans.map((PlanModel p) => p.toMap()).toList(),
       _planPaymentsKey:
           planPayments.map((PlanPaymentModel p) => p.toMap()).toList(),
+      _accountsKey: accounts.map((AccountModel a) => a.toMap()).toList(),
+      _transfersKey: transfers.map((TransferModel t) => t.toMap()).toList(),
       if (settings != null) _settingsKey: _settingsToMap(settings!),
     });
   }
