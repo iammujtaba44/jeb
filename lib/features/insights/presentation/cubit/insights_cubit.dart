@@ -152,6 +152,7 @@ class InsightsCubit extends Cubit<InsightsState> {
       ));
     }
 
+    if (isClosed) return;
     emit(
       InsightsState(
         isLoading: false,

@@ -97,6 +97,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
 
   Future<void> deleteTransaction(String id) async {
     final result = await _deleteTransaction(id);
+    if (isClosed) return;
     await result.fold(
       (failure) async => emit(TransactionsError(failure.message)),
       (_) async => _refreshFromCache(),
@@ -137,6 +138,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   Future<void> _refreshFromCache() async {
     final categoriesResult = await _getCategories(const NoParams());
     final transactionsResult = await _getTransactionsForMonth(_month);
+    if (isClosed) return;
 
     categoriesResult.fold(
       (failure) => emit(TransactionsError(failure.message)),

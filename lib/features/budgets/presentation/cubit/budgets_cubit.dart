@@ -91,6 +91,7 @@ class BudgetsCubit extends Cubit<BudgetsState> {
       }
     });
 
+    if (isClosed) return;
     emit(
       BudgetsState(
         isLoading: false,

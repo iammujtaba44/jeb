@@ -93,6 +93,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
     final result = state.repeat && !state.isEditing
         ? await _saveRecurringTransaction(_buildRule())
         : await _addTransaction(_buildTransaction());
+    if (isClosed) return;
 
     result.fold(
       (failure) => emit(
@@ -112,6 +113,7 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
     if (ruleId == null || state.isSubmitting) return;
     emit(state.copyWith(status: AddTransactionStatus.submitting));
     final result = await _deleteRecurringTransaction(ruleId);
+    if (isClosed) return;
     result.fold(
       (failure) => emit(
         state.copyWith(

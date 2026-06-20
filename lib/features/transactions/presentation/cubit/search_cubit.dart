@@ -25,6 +25,7 @@ class SearchCubit extends Cubit<SearchState> {
 
   Future<void> init() async {
     final result = await _getCategories(const NoParams());
+    if (isClosed) return;
     result.fold(
       (_) {},
       (List<Category> categories) =>
@@ -55,6 +56,7 @@ class SearchCubit extends Cubit<SearchState> {
   Future<void> _apply(SearchCriteria criteria) async {
     emit(state.copyWith(criteria: criteria, isLoading: true));
     final result = await _searchTransactions(criteria);
+    if (isClosed) return;
     result.fold(
       (_) => emit(state.copyWith(isLoading: false, results: const <Transaction>[])),
       (List<Transaction> results) =>
