@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/currencies.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/services/forex_service.dart';
+import 'package:jeb/core/services/google_drive_auth.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/app_snackbar.dart';
@@ -29,6 +31,7 @@ abstract class _Accent {
   static const Color categories = Color(0xFF0EA5E9); // sky
   static const Color accounts = Color(0xFFEA580C); // orange
   static const Color rates = Color(0xFF4F46E5); // indigo
+  static const Color drive = Color(0xFF1A73E8); // google blue
 }
 
 class SettingsPage extends StatelessWidget {
@@ -108,6 +111,10 @@ class SettingsPage extends StatelessWidget {
                 children: <Widget>[
                   _SyncToggleTile(enabled: state.settings.syncEnabled),
                   if (state.settings.syncEnabled) ...<Widget>[
+                    if (defaultTargetPlatform == TargetPlatform.android) ...<Widget>[
+                      const _TileDivider(),
+                      const _GoogleDriveTile(),
+                    ],
                     const _TileDivider(),
                     _BackupNowTile(state: state),
                   ],
@@ -471,6 +478,79 @@ class _AppLockTile extends StatelessWidget {
   }
 }
 
+/// Connect / disconnect the user's Google Drive for backup (Android only).
+class _GoogleDriveTile extends StatefulWidget {
+  const _GoogleDriveTile();
+
+  @override
+  State<_GoogleDriveTile> createState() => _GoogleDriveTileState();
+}
+
+class _GoogleDriveTileState extends State<_GoogleDriveTile> {
+  bool _busy = false;
+
+  GoogleDriveAuth get _auth => getIt<GoogleDriveAuth>();
+
+  Future<void> _connect() async {
+    setState(() => _busy = true);
+    final String? email = await _auth.connect();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (email == null) return; // cancelled
+    AppSnackbar.show(context, 'Connected $email', type: SnackType.success);
+    // Push an initial backup to the freshly connected Drive.
+    await context.read<SettingsCubit>().backupNow();
+  }
+
+  Future<void> _disconnect() async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Disconnect Google Drive?'),
+        content: const Text(
+          'Future backups will stay on this device until you reconnect. Your '
+          'existing Drive backup is left untouched.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _busy = true);
+    await _auth.disconnect();
+    if (!mounted) return;
+    setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool connected = _auth.isConnected;
+    return _SettingsTile(
+      icon: PhosphorIcons.googleDriveLogo(PhosphorIconsStyle.duotone),
+      tint: _Accent.drive,
+      title: connected ? 'Google Drive' : 'Connect Google Drive',
+      subtitle: connected
+          ? 'Connected · ${_auth.email ?? 'signed in'}'
+          : 'Back up privately to your own Google Drive',
+      trailing: _busy
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const _Chevron(),
+      onTap: _busy ? null : (connected ? _disconnect : _connect),
+    );
+  }
+}
+
 class _SyncToggleTile extends StatelessWidget {
   const _SyncToggleTile({required this.enabled});
 
@@ -478,6 +558,8 @@ class _SyncToggleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final String cloud = isAndroid ? 'Google Drive' : 'iCloud';
     return SwitchListTile(
       value: enabled,
       onChanged: context.read<SettingsCubit>().setSyncEnabled,
@@ -485,13 +567,13 @@ class _SyncToggleTile extends StatelessWidget {
         icon: PhosphorIcons.cloud(PhosphorIconsStyle.duotone),
         color: _Accent.cloud,
       ),
-      title: const Text(
-        'iCloud Sync',
-        style: TextStyle(fontWeight: FontWeight.w600),
+      title: Text(
+        isAndroid ? 'Cloud sync' : 'iCloud Sync',
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         enabled
-            ? 'Backs up privately to your own iCloud.'
+            ? 'Backs up privately to your own $cloud.'
             : 'Off — data stays only on this device.',
       ),
     );

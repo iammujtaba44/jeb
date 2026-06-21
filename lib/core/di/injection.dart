@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jeb/core/services/export_service.dart';
 import 'package:jeb/core/services/forex_service.dart';
+import 'package:jeb/core/services/google_drive_auth.dart';
 import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/accounts/data/datasources/accounts_local_datasource.dart';
@@ -41,6 +42,7 @@ import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/data/datasources/app_database.dart';
 import 'package:jeb/features/transactions/data/datasources/cloud_file_store.dart';
 import 'package:jeb/features/transactions/data/datasources/cloud_sync_datasource.dart';
+import 'package:jeb/features/transactions/data/datasources/google_drive_file_store.dart';
 import 'package:jeb/features/transactions/data/datasources/icloud_file_store.dart';
 import 'package:jeb/features/transactions/data/datasources/transaction_local_datasource.dart';
 import 'package:jeb/features/transactions/data/sync/sync_engine.dart';
@@ -82,6 +84,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ForexService>(
     () => ForexService(getIt<SharedPreferences>()),
   );
+  getIt.registerLazySingleton<GoogleDriveAuth>(GoogleDriveAuth.new);
   getIt.registerLazySingleton<HomeLayoutStore>(
     () => HomeLayoutStore(getIt<SharedPreferences>()),
   );
@@ -350,9 +353,16 @@ Future<void> configureDependencies() async {
     );
 }
 
-/// iCloud on Apple platforms (uses the user's own iCloud — no extra account),
-/// a local file elsewhere.
+/// iCloud on Apple platforms (the user's own iCloud — no extra account),
+/// Google Drive on Android (the user's own Drive, once connected), and a local
+/// file everywhere else. The Drive store falls back to local until connected.
 CloudFileStore _buildCloudFileStore() {
   if (Platform.isIOS || Platform.isMacOS) return const ICloudFileStore();
+  if (Platform.isAndroid) {
+    return GoogleDriveCloudStore(
+      auth: getIt<GoogleDriveAuth>(),
+      fallback: const LocalFileCloudStore(),
+    );
+  }
   return const LocalFileCloudStore();
 }

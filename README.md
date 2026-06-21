@@ -23,7 +23,7 @@ device and your own iCloud, never on anyone else's servers.
 
 Most money apps want your bank logins and ship your transactions to a server.
 **Jeb keeps everything on-device** in a local SQLite database, and syncs
-privately through *your own* iCloud — there's no Jeb account, no backend, no
+privately through _your own_ iCloud — there's no Jeb account, no backend, no
 analytics. It's fast, works offline, and is yours.
 
 ## Features
@@ -36,12 +36,12 @@ formatting (Lakh/Crore for South‑Asian currencies, K/M/B otherwise).
 amounts, a per‑account history, and transfers between accounts (cross‑currency
 aware). Archive accounts you no longer use.
 
-**🎯 Plans** — long‑running goals as *assets*, *loans*, or *giving* (e.g. zakat),
+**🎯 Plans** — long‑running goals as _assets_, _loans_, or _giving_ (e.g. zakat),
 each with progress and a rolled‑up **net position** (assets − liabilities).
 
 **📊 Budgets & insights** — an overall and per‑category monthly budget, plus an
 Insights screen with a spending‑trend chart, a per‑month budget check (when you
-went over and *why*), top categories, and a savings rate. Pick **3M / 6M / 12M**
+went over and _why_), top categories, and a savings rate. Pick **3M / 6M / 12M**
 presets (trailing windows that always include the current month) or a **custom
 month range**.
 
@@ -51,20 +51,19 @@ free, key‑less source, cached on device) with a bundled offline fallback.
 **🧩 Customizable home** — drag to reorder and toggle the home dashboard
 sections (summary, accounts, plans, spending, recent).
 
-**☁️ Private iCloud sync** — last‑write‑wins merge with soft‑delete tombstones
-and receipt‑file sync; backs up on open and as you leave the app.
+**☁️ Private cloud sync** — to the user's **own iCloud** on Apple and their
+**own Google Drive** on Android (last‑write‑wins merge, soft‑delete tombstones,
+receipt‑file sync; backs up on open and as you leave the app). No Jeb account,
+no server.
 
 **🔒 Privacy & security** — biometric app lock (Face ID / fingerprint), daily
 reminder, CSV/PDF export, and light / dark / system themes (Material 3 + Inter).
 
 ## Screenshots
 
-| Home | Budgets | Plans | Settings |
-| :--: | :-----: | :---: | :------: |
+|                 Home                  |                   Budgets                   |                  Plans                  |                      Settings                       |
+| :-----------------------------------: | :-----------------------------------------: | :-------------------------------------: | :-------------------------------------------------: |
 | ![Home](docs/screenshots/01-home.png) | ![Budgets](docs/screenshots/02-budgets.png) | ![Plans](docs/screenshots/03-plans.png) | ![Settings](docs/screenshots/04-settings-money.png) |
-
-> Add your screenshots under [`docs/screenshots/`](docs/screenshots/) and run
-> [`./docs/make-demo-gif.sh`](docs/make-demo-gif.sh) to (re)build the demo GIF.
 
 ## Architecture
 
@@ -100,10 +99,14 @@ flutter pub get
 flutter run
 ```
 
-iCloud sync is enabled automatically on Apple platforms using the user's own
-iCloud (no extra account); on other platforms it falls back to a local file
-store. To run on a physical iPhone you'll need to set your own bundle id and
-iCloud container in Xcode.
+**Backup setup:**
+
+- **iOS / macOS** — uses the user's own iCloud automatically. To run on a
+  physical iPhone, set your own bundle id and iCloud container in Xcode.
+- **Android** — backs up to the user's own Google Drive after a one‑time
+  Google sign‑in. This needs your own Google Cloud OAuth client — see
+  [`docs/google-drive-setup.md`](docs/google-drive-setup.md). Until connected,
+  data stays local on the device.
 
 Generate launcher icons / splash (optional):
 
