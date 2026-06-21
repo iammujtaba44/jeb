@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jeb/core/constants/app_constants.dart';
 import 'package:jeb/core/constants/currencies.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/services/forex_service.dart';
@@ -16,6 +17,18 @@ import 'package:jeb/features/settings/presentation/widgets/export_sheet.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/presentation/pages/categories_page.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Opens an external link in the browser, with a snackbar on failure.
+Future<void> _openUrl(BuildContext context, String url) async {
+  final bool ok = await launchUrl(
+    Uri.parse(url),
+    mode: LaunchMode.externalApplication,
+  );
+  if (!ok && context.mounted) {
+    AppSnackbar.show(context, 'Couldn\'t open the link', type: SnackType.error);
+  }
+}
 
 /// Accent colors for the settings icon badges — each tile gets its own hue
 /// so the screen reads as a set of distinct, beautiful controls.
@@ -32,6 +45,9 @@ abstract class _Accent {
   static const Color accounts = Color(0xFFEA580C); // orange
   static const Color rates = Color(0xFF4F46E5); // indigo
   static const Color drive = Color(0xFF1A73E8); // google blue
+  static const Color support = Color(0xFFEC4899); // pink
+  static const Color coffee = Color(0xFFD97706); // amber
+  static const Color developer = Color(0xFF0891B2); // cyan
 }
 
 class SettingsPage extends StatelessWidget {
@@ -145,18 +161,58 @@ class SettingsPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              const _SectionLabel('About'),
+              const _SectionLabel('About & support'),
               _SettingsCard(
                 children: <Widget>[
+                  _SettingsTile(
+                    icon: PhosphorIcons.heart(PhosphorIconsStyle.duotone),
+                    tint: _Accent.support,
+                    title: 'Support Jeb',
+                    subtitle: 'Sponsor development on GitHub',
+                    trailing: const _Chevron(),
+                    onTap: () =>
+                        _openUrl(context, AppConstants.sponsorsUrl),
+                  ),
+                  const _TileDivider(),
+                  _SettingsTile(
+                    icon: PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
+                    tint: _Accent.coffee,
+                    title: 'Buy me a coffee',
+                    subtitle: 'A one-time thank you',
+                    trailing: const _Chevron(),
+                    onTap: () =>
+                        _openUrl(context, AppConstants.buyMeCoffeeUrl),
+                  ),
+                  const _TileDivider(),
+                  _SettingsTile(
+                    icon: PhosphorIcons.globe(PhosphorIconsStyle.duotone),
+                    tint: _Accent.developer,
+                    title: 'Developer',
+                    subtitle: 'mujtaba.cc',
+                    trailing: const _Chevron(),
+                    onTap: () =>
+                        _openUrl(context, AppConstants.portfolioUrl),
+                  ),
+                  const _TileDivider(),
                   _SettingsTile(
                     icon: PhosphorIcons.shieldCheck(PhosphorIconsStyle.duotone),
                     tint: _Accent.privacy,
                     title: 'Private by design',
                     subtitle:
-                        'Your data lives on this device and your own iCloud — never on our servers.',
+                        'Your data lives on this device and your own cloud — never on our servers.',
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.lg),
+              Center(
+                child: Text(
+                  '${AppConstants.appName} v${AppConstants.appVersion}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
             ],
           );
         },
