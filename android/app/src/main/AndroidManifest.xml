@@ -5,7 +5,7 @@
     <!-- Receipt photos: camera is optional so the app still installs without one. -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
-        android:label="jeb"
+        android:label="Jeb"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
