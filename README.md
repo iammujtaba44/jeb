@@ -26,6 +26,13 @@ Most money apps want your bank logins and ship your transactions to a server.
 privately through _your own_ iCloud — there's no Jeb account, no backend, no
 analytics. It's fast, works offline, and is yours.
 
+## Install
+
+| Platform | How |
+| --- | --- |
+| **iOS** (beta) | [Join via TestFlight](https://testflight.apple.com/join/5kvKAwkH) |
+| **Android** | Download the APK from the [latest release](https://github.com/iammujtaba44/jeb/releases/latest) and open it (allow "install from unknown sources") |
+
 ## Features
 
 **💸 Transactions** — income & expense, custom categories, recurring rules,
