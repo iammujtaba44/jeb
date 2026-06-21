@@ -5,9 +5,12 @@ import 'package:jeb/core/theme/app_spacing.dart';
 /// Dialog for jumping to any month/year. Returns the first day of the chosen
 /// month, or null if dismissed. Future months are disabled.
 class MonthPickerDialog extends StatefulWidget {
-  const MonthPickerDialog({required this.initialMonth, super.key});
+  const MonthPickerDialog({required this.initialMonth, this.title, super.key});
 
   final DateTime initialMonth;
+
+  /// Optional heading, e.g. "Start month" / "End month".
+  final String? title;
 
   @override
   State<MonthPickerDialog> createState() => _MonthPickerDialogState();
@@ -33,6 +36,18 @@ class _MonthPickerDialogState extends State<MonthPickerDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            if (widget.title != null) ...<Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.title!,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[

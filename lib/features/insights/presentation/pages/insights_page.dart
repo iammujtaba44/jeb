@@ -6,6 +6,7 @@ import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/features/insights/presentation/cubit/insights_cubit.dart';
+import 'package:jeb/features/transactions/presentation/widgets/month_picker_dialog.dart';
 
 class InsightsPage extends StatelessWidget {
   const InsightsPage({super.key});
@@ -31,7 +32,13 @@ class InsightsView extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: <Widget>[
-              _RangeSelector(selected: state.rangeMonths),
+              _RangeSelector(state: state),
+              if (state.isCustom &&
+                  state.customStart != null &&
+                  state.customEnd != null) ...<Widget>[
+                const SizedBox(height: AppSpacing.sm),
+                _CustomRangeBar(state: state),
+              ],
               const SizedBox(height: AppSpacing.lg),
               if (state.isLoading)
                 const Padding(
@@ -61,13 +68,17 @@ class InsightsView extends StatelessWidget {
   }
 }
 
-class _RangeSelector extends StatelessWidget {
-  const _RangeSelector({required this.selected});
+/// Sentinel segment value standing for "Custom range".
+const int _customRange = 0;
 
-  final int selected;
+class _RangeSelector extends StatelessWidget {
+  const _RangeSelector({required this.state});
+
+  final InsightsState state;
 
   @override
   Widget build(BuildContext context) {
+    final int selected = state.isCustom ? _customRange : state.rangeMonths;
     return SizedBox(
       width: double.infinity,
       child: SegmentedButton<int>(
@@ -75,13 +86,166 @@ class _RangeSelector extends StatelessWidget {
         segments: <ButtonSegment<int>>[
           for (final int m in InsightsCubit.ranges)
             ButtonSegment<int>(value: m, label: Text('${m}M')),
+          const ButtonSegment<int>(
+            value: _customRange,
+            label: Text('Custom'),
+          ),
         ],
         selected: <int>{selected},
-        onSelectionChanged: (Set<int> s) =>
-            context.read<InsightsCubit>().setRange(s.first),
+        onSelectionChanged: (Set<int> s) {
+          final int value = s.first;
+          if (value == _customRange) {
+            // Enter custom mode with a sensible default span; the From/To bar
+            // below lets the user adjust either end afterwards.
+            if (!state.isCustom) {
+              final DateTime now = DateTime.now();
+              context.read<InsightsCubit>().setCustomRange(
+                    DateTime(now.year, now.month - 2),
+                    DateTime(now.year, now.month),
+                  );
+            }
+          } else {
+            context.read<InsightsCubit>().setRange(value);
+          }
+        },
       ),
     );
   }
+}
+
+/// Shown while a custom range is active: two tappable fields making the start
+/// and end months explicit and individually editable.
+class _CustomRangeBar extends StatelessWidget {
+  const _CustomRangeBar({required this.state});
+
+  final InsightsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final DateTime start = state.customStart!;
+    final DateTime end = state.customEnd!;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _BoundCell(
+            label: 'From',
+            month: start,
+            onTap: () => _editBound(context, isStart: true),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          child: Icon(Icons.arrow_forward,
+              size: 16, color: scheme.onSurfaceVariant),
+        ),
+        Expanded(
+          child: _BoundCell(
+            label: 'To',
+            month: end,
+            onTap: () => _editBound(context, isStart: false),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _editBound(
+    BuildContext context, {
+    required bool isStart,
+  }) async {
+    final InsightsCubit cubit = context.read<InsightsCubit>();
+    final DateTime? picked = await showDialog<DateTime>(
+      context: context,
+      builder: (_) => MonthPickerDialog(
+        initialMonth: isStart ? state.customStart! : state.customEnd!,
+        title: isStart ? 'Start month' : 'End month',
+      ),
+    );
+    if (picked == null) return;
+    await cubit.setCustomRange(
+      isStart ? picked : state.customStart!,
+      isStart ? state.customEnd! : picked,
+    );
+  }
+}
+
+class _BoundCell extends StatelessWidget {
+  const _BoundCell({
+    required this.label,
+    required this.month,
+    required this.onTap,
+  });
+
+  final String label;
+  final DateTime month;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label.toUpperCase(),
+              style: textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                letterSpacing: 0.6,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    DateFormat.yMMM().format(month),
+                    style: textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(Icons.expand_more,
+                    size: 18, color: scheme.onSurfaceVariant),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Human-readable label for the active range, e.g. "Last 6 months",
+/// "Mar – Jun 2026", or "Nov 2025 – Feb 2026".
+String _rangeLabel(InsightsState state) {
+  final DateTime? s = state.customStart;
+  final DateTime? e = state.customEnd;
+  if (!state.isCustom || s == null || e == null) {
+    return 'Last ${state.rangeMonths} months';
+  }
+  if (s.year == e.year && s.month == e.month) {
+    return DateFormat.yMMM().format(s);
+  }
+  if (s.year == e.year) {
+    return '${DateFormat.MMM().format(s)} – ${DateFormat.yMMM().format(e)}';
+  }
+  return '${DateFormat.yMMM().format(s)} – ${DateFormat.yMMM().format(e)}';
 }
 
 class _TotalsCard extends StatelessWidget {
@@ -101,9 +265,27 @@ class _TotalsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'Last ${state.rangeMonths} months',
-              style: Theme.of(context).textTheme.titleSmall,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: <Widget>[
+                Flexible(
+                  child: Text(
+                    _rangeLabel(state),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${MoneyFormatter.compact(state.avgMonthlySpending, cur)}/mo avg',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
             Row(

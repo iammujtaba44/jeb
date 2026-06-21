@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/currencies.dart';
+import 'package:jeb/core/di/injection.dart';
+import 'package:jeb/core/services/forex_service.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/app_snackbar.dart';
@@ -26,6 +28,7 @@ abstract class _Accent {
   static const Color export = Color(0xFF0891B2); // cyan
   static const Color categories = Color(0xFF0EA5E9); // sky
   static const Color accounts = Color(0xFFEA580C); // orange
+  static const Color rates = Color(0xFF4F46E5); // indigo
 }
 
 class SettingsPage extends StatelessWidget {
@@ -58,6 +61,8 @@ class SettingsPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const _TileDivider(),
+                  const _ExchangeRatesTile(),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -285,6 +290,53 @@ class _CurrencyTile extends StatelessWidget {
     final String? picked =
         await showCurrencyPicker(context, selected: currencyCode);
     if (picked != null) cubit.setDefaultCurrency(picked);
+  }
+}
+
+class _ExchangeRatesTile extends StatefulWidget {
+  const _ExchangeRatesTile();
+
+  @override
+  State<_ExchangeRatesTile> createState() => _ExchangeRatesTileState();
+}
+
+class _ExchangeRatesTileState extends State<_ExchangeRatesTile> {
+  bool _refreshing = false;
+
+  Future<void> _refresh() async {
+    setState(() => _refreshing = true);
+    final bool ok = await getIt<ForexService>().refresh();
+    if (!mounted) return;
+    setState(() => _refreshing = false);
+    AppSnackbar.show(
+      context,
+      ok ? 'Exchange rates updated' : 'Couldn\'t update rates — check connection',
+      type: ok ? SnackType.success : SnackType.error,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final DateTime? last = getIt<ForexService>().lastUpdated;
+    return _SettingsTile(
+      icon: PhosphorIcons.currencyCircleDollar(PhosphorIconsStyle.duotone),
+      tint: _Accent.rates,
+      title: 'Exchange rates',
+      subtitle: last == null
+          ? 'Live rates for multi-currency totals — tap to fetch'
+          : 'Live · updated ${DateFormatter.dateTime(last)}',
+      trailing: _refreshing
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(
+              PhosphorIcons.arrowsClockwise(),
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+      onTap: _refreshing ? null : _refresh,
+    );
   }
 }
 

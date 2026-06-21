@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/app.dart';
 import 'package:jeb/core/di/injection.dart';
+import 'package:jeb/core/services/forex_service.dart';
 import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/services/receipt_store.dart';
+import 'package:jeb/features/home/presentation/cubit/home_layout_cubit.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 
 Future<void> main() async {
@@ -11,9 +15,19 @@ Future<void> main() async {
   await configureDependencies();
   await getIt<NotificationService>().init();
   await getIt<ReceiptStore>().init();
+  // Apply cached FX rates immediately, then refresh in the background.
+  getIt<ForexService>().primeFromCache();
+  unawaited(getIt<ForexService>().refreshIfStale());
   runApp(
-    BlocProvider<SettingsCubit>(
-      create: (_) => getIt<SettingsCubit>()..load(),
+    MultiBlocProvider(
+      providers: <BlocProvider<dynamic>>[
+        BlocProvider<SettingsCubit>(
+          create: (_) => getIt<SettingsCubit>()..load(),
+        ),
+        BlocProvider<HomeLayoutCubit>(
+          create: (_) => getIt<HomeLayoutCubit>(),
+        ),
+      ],
       child: const JebApp(),
     ),
   );

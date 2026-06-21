@@ -50,6 +50,32 @@ void main() {
       );
       expect(s.monthsOverBudget, 1);
     });
+
+    test('avgMonthlySpending divides total spend by the range length', () {
+      const InsightsState s = InsightsState(
+        isLoading: false,
+        rangeMonths: 3,
+        totalSpending: 900,
+      );
+      expect(s.avgMonthlySpending, 300);
+      expect(const InsightsState(rangeMonths: 0).avgMonthlySpending, 0);
+    });
+
+    test('a custom range carries its own span and bounds', () {
+      final InsightsState s = InsightsState(
+        isLoading: false,
+        isCustom: true,
+        rangeMonths: 4,
+        customStart: DateTime(2025, 11),
+        customEnd: DateTime(2026, 2),
+        budgetPerMonth: 250,
+      );
+      expect(s.isCustom, isTrue);
+      expect(s.customStart, DateTime(2025, 11));
+      expect(s.customEnd, DateTime(2026, 2));
+      // totalBudget still scales by the (custom) range length.
+      expect(s.totalBudget, 1000);
+    });
   });
 
   group('MonthBudgetCheck', () {

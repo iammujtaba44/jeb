@@ -5,6 +5,9 @@ import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/features/accounts/presentation/cubit/accounts_cubit.dart';
 import 'package:jeb/features/accounts/presentation/widgets/accounts_carousel.dart';
+import 'package:jeb/features/home/domain/home_section.dart';
+import 'package:jeb/features/home/presentation/cubit/home_layout_cubit.dart';
+import 'package:jeb/features/home/presentation/pages/customize_home_page.dart';
 import 'package:jeb/features/insights/presentation/pages/insights_page.dart';
 import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/widgets/plans_carousel.dart';
@@ -30,25 +33,68 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
+        titleSpacing: AppSpacing.sm,
+        toolbarHeight: 64,
         title: const MonthNavigator(),
-        centerTitle: true,
         actions: <Widget>[
-          IconButton(
-            icon: Icon(PhosphorIcons.chartBar(PhosphorIconsStyle.bold)),
+          _AppBarAction(
+            icon: PhosphorIcons.chartBar(PhosphorIconsStyle.bold),
             tooltip: 'Insights',
-            onPressed: () => Navigator.of(context).push<void>(
+            onTap: () => Navigator.of(context).push<void>(
               MaterialPageRoute<void>(builder: (_) => const InsightsPage()),
             ),
           ),
-          IconButton(
-            icon: Icon(PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold)),
+          _AppBarAction(
+            icon: PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
             tooltip: 'Search',
-            onPressed: () => _openSearch(context),
+            onTap: () => _openSearch(context),
           ),
-          const SizedBox(width: AppSpacing.xs),
+          _AppBarAction(
+            icon: PhosphorIcons.slidersHorizontal(PhosphorIconsStyle.bold),
+            tooltip: 'Customize home',
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute<void>(builder: (_) => const CustomizeHomePage()),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
         ],
       ),
       body: const _HomeBody(),
+    );
+  }
+}
+
+/// A soft, circular app-bar button that echoes the month pill's surface tint —
+/// keeps the top bar reading as one cohesive set of controls.
+class _AppBarAction extends StatelessWidget {
+  const _AppBarAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xs),
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onTap,
+        icon: Icon(icon, size: 19),
+        style: IconButton.styleFrom(
+          backgroundColor: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          foregroundColor: scheme.onSurface,
+          shape: const CircleBorder(),
+          minimumSize: const Size(42, 42),
+          padding: EdgeInsets.zero,
+        ),
+      ),
     );
   }
 }
@@ -106,27 +152,50 @@ class _LoadedContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Transaction> recent =
-        state.transactions.take(_recentLimit).toList();
+    return BlocBuilder<HomeLayoutCubit, HomeLayout>(
+      builder: (BuildContext context, HomeLayout layout) {
+        final List<HomeSection> visible = layout.visible;
+        return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: <Widget>[
+            if (visible.isEmpty)
+              const SliverToBoxAdapter(child: _EmptyHome())
+            else
+              for (final HomeSection section in visible)
+                ..._sectionSlivers(context, section),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+          ],
+        );
+      },
+    );
+  }
 
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      slivers: <Widget>[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: MonthSummaryCard(
-              income: state.totalIncome,
-              expense: state.totalExpense,
-              balance: state.balance,
-              currencyCode: state.currencyCode,
-              budgetLimit: state.overallBudget,
+  /// The slivers for one [HomeSection]. Some sections render nothing when they
+  /// have no data to show (e.g. spending with no expense).
+  List<Widget> _sectionSlivers(BuildContext context, HomeSection section) {
+    switch (section) {
+      case HomeSection.summary:
+        return <Widget>[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: MonthSummaryCard(
+                income: state.totalIncome,
+                expense: state.totalExpense,
+                balance: state.balance,
+                currencyCode: state.currencyCode,
+                budgetLimit: state.overallBudget,
+              ),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(child: AccountsCarousel()),
-        const SliverToBoxAdapter(child: PlansCarousel()),
-        if (state.totalExpense > 0)
+        ];
+      case HomeSection.accounts:
+        return const <Widget>[SliverToBoxAdapter(child: AccountsCarousel())];
+      case HomeSection.plans:
+        return const <Widget>[SliverToBoxAdapter(child: PlansCarousel())];
+      case HomeSection.spending:
+        if (state.totalExpense <= 0) return const <Widget>[];
+        return <Widget>[
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -137,14 +206,21 @@ class _LoadedContent extends StatelessWidget {
               ),
             ),
           ),
-        if (state.transactions.isEmpty)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              child: EmptyTransactionsView(),
+        ];
+      case HomeSection.recent:
+        if (state.transactions.isEmpty) {
+          return const <Widget>[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                child: EmptyTransactionsView(),
+              ),
             ),
-          )
-        else ...<Widget>[
+          ];
+        }
+        final List<Transaction> recent =
+            state.transactions.take(_recentLimit).toList();
+        return <Widget>[
           SliverToBoxAdapter(
             child: _RecentHeader(
               hasMore: state.transactions.length > _recentLimit,
@@ -167,9 +243,43 @@ class _LoadedContent extends StatelessWidget {
               );
             },
           ),
+        ];
+    }
+  }
+}
+
+/// Shown when every home section has been switched off.
+class _EmptyHome extends StatelessWidget {
+  const _EmptyHome();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        children: <Widget>[
+          const SizedBox(height: AppSpacing.xl),
+          Icon(PhosphorIcons.slidersHorizontal(PhosphorIconsStyle.duotone),
+              size: 52, color: scheme.primary),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Your home is empty',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Tap the sliders icon to turn sections back on.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+          ),
         ],
-        const SliverToBoxAdapter(child: SizedBox(height: 96)),
-      ],
+      ),
     );
   }
 }

@@ -38,17 +38,71 @@ class InsightsCubit extends Cubit<InsightsState> {
   static const int _topCategoryCount = 6;
   static const int _driverCount = 3;
 
-  Future<void> load() => _load(state.rangeMonths);
-
-  Future<void> setRange(int months) {
-    if (months == state.rangeMonths && !state.isLoading) return Future<void>.value();
-    emit(InsightsState(rangeMonths: months, currency: state.currency));
-    return _load(months);
+  Future<void> load() {
+    if (state.isCustom &&
+        state.customStart != null &&
+        state.customEnd != null) {
+      return _load(
+        endMonth: state.customEnd!,
+        count: state.rangeMonths,
+        isCustom: true,
+        customStart: state.customStart,
+        customEnd: state.customEnd,
+      );
+    }
+    return _load(endMonth: _currentMonth(), count: state.rangeMonths);
   }
 
-  Future<void> _load(int rangeMonths) async {
-    final DateTime now = DateTime.now();
+  /// Selects a preset trailing window: the last [months] months, always ending
+  /// at (and including) the current month.
+  Future<void> setRange(int months) {
+    if (!state.isCustom &&
+        months == state.rangeMonths &&
+        !state.isLoading) {
+      return Future<void>.value();
+    }
+    emit(InsightsState(rangeMonths: months, currency: state.currency));
+    return _load(endMonth: _currentMonth(), count: months);
+  }
 
+  /// Selects an arbitrary span between two months (inclusive, order-agnostic).
+  Future<void> setCustomRange(DateTime start, DateTime end) {
+    DateTime lo = DateTime(start.year, start.month);
+    DateTime hi = DateTime(end.year, end.month);
+    if (lo.isAfter(hi)) {
+      final DateTime swap = lo;
+      lo = hi;
+      hi = swap;
+    }
+    final int count = (hi.year - lo.year) * 12 + (hi.month - lo.month) + 1;
+    emit(InsightsState(
+      rangeMonths: count,
+      isCustom: true,
+      customStart: lo,
+      customEnd: hi,
+      currency: state.currency,
+    ));
+    return _load(
+      endMonth: hi,
+      count: count,
+      isCustom: true,
+      customStart: lo,
+      customEnd: hi,
+    );
+  }
+
+  static DateTime _currentMonth() {
+    final DateTime now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  Future<void> _load({
+    required DateTime endMonth,
+    required int count,
+    bool isCustom = false,
+    DateTime? customStart,
+    DateTime? customEnd,
+  }) async {
     final settingsResult = await _getSettings(const NoParams());
     final String currency = settingsResult.fold(
       (_) => AppSettings.defaults.defaultCurrencyCode,
@@ -91,8 +145,8 @@ class InsightsCubit extends Cubit<InsightsState> {
     double totalIncome = 0;
     double totalSpending = 0;
 
-    for (int offset = rangeMonths - 1; offset >= 0; offset--) {
-      final DateTime month = DateTime(now.year, now.month - offset);
+    for (int offset = count - 1; offset >= 0; offset--) {
+      final DateTime month = DateTime(endMonth.year, endMonth.month - offset);
       final result = await _getTransactionsForMonth(month);
       final List<Transaction> transactions = result.fold(
         (_) => const <Transaction>[],
@@ -156,7 +210,10 @@ class InsightsCubit extends Cubit<InsightsState> {
     emit(
       InsightsState(
         isLoading: false,
-        rangeMonths: rangeMonths,
+        rangeMonths: count,
+        isCustom: isCustom,
+        customStart: customStart,
+        customEnd: customEnd,
         currency: currency,
         months: months,
         topCategories: topCategories,

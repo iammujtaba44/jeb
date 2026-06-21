@@ -85,12 +85,22 @@ class AccountsView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 const _SectionLabel('Recent transfers'),
                 const SizedBox(height: AppSpacing.sm),
-                for (final Transfer t in state.transfers.take(8))
-                  _TransferTile(
-                    transfer: t,
-                    state: state,
-                    onDelete: () => _confirmDeleteTransfer(context, t),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: <Widget>[
+                      for (final (int i, Transfer t)
+                          in state.transfers.take(8).indexed) ...<Widget>[
+                        if (i > 0) const Divider(height: 1, indent: 64),
+                        _TransferTile(
+                          transfer: t,
+                          state: state,
+                          onDelete: () => _confirmDeleteTransfer(context, t),
+                        ),
+                      ],
+                    ],
                   ),
+                ),
               ],
               const SizedBox(height: AppSpacing.xl),
             ],
@@ -353,6 +363,7 @@ class _TransferTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextTheme textTheme = Theme.of(context).textTheme;
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final Account? from = state.accountById(transfer.fromAccountId);
     final Account? to = state.accountById(transfer.toAccountId);
@@ -361,18 +372,44 @@ class _TransferTile extends StatelessWidget {
     final String currency = from?.currencyCode ?? state.currency;
 
     return ListTile(
-      dense: true,
       onLongPress: onDelete,
-      leading: Icon(
-        PhosphorIcons.arrowsLeftRight(),
-        color: scheme.onSurfaceVariant,
-        size: 20,
+      leading: CircleAvatar(
+        backgroundColor: scheme.primary.withValues(alpha: 0.12),
+        child: Icon(
+          PhosphorIcons.arrowsLeftRight(PhosphorIconsStyle.bold),
+          color: scheme.primary,
+          size: 18,
+        ),
       ),
-      title: Text('$fromName → $toName'),
+      title: Row(
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              fromName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Icon(PhosphorIcons.arrowRight(),
+                size: 12, color: scheme.onSurfaceVariant),
+          ),
+          Flexible(
+            child: Text(
+              toName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
       subtitle: Text(DateFormatter.dayMonth(transfer.date)),
       trailing: Text(
         MoneyFormatter.compact(transfer.amount, currency),
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

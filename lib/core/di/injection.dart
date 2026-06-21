@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jeb/core/services/export_service.dart';
+import 'package:jeb/core/services/forex_service.dart';
 import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/accounts/data/datasources/accounts_local_datasource.dart';
@@ -17,6 +18,8 @@ import 'package:jeb/features/budgets/domain/usecases/get_budgets.dart';
 import 'package:jeb/features/budgets/domain/usecases/remove_budget.dart';
 import 'package:jeb/features/budgets/domain/usecases/set_budget.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
+import 'package:jeb/features/home/data/home_layout_store.dart';
+import 'package:jeb/features/home/presentation/cubit/home_layout_cubit.dart';
 import 'package:jeb/features/insights/presentation/cubit/insights_cubit.dart';
 import 'package:jeb/features/plans/data/datasources/plans_local_datasource.dart';
 import 'package:jeb/features/plans/data/repositories/plans_repository_impl.dart';
@@ -76,6 +79,15 @@ Future<void> configureDependencies() async {
     () => ReceiptStore(getIt<Uuid>()),
   );
   getIt.registerLazySingleton<ExportService>(ExportService.new);
+  getIt.registerLazySingleton<ForexService>(
+    () => ForexService(getIt<SharedPreferences>()),
+  );
+  getIt.registerLazySingleton<HomeLayoutStore>(
+    () => HomeLayoutStore(getIt<SharedPreferences>()),
+  );
+  getIt.registerLazySingleton<HomeLayoutCubit>(
+    () => HomeLayoutCubit(getIt<HomeLayoutStore>()),
+  );
 
   // ── Data: database & sources ─────────────────────────────────────────
   getIt.registerLazySingleton<AppDatabase>(AppDatabase.new);

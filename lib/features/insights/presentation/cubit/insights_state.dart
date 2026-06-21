@@ -59,6 +59,9 @@ final class InsightsState extends Equatable {
   const InsightsState({
     this.isLoading = true,
     this.rangeMonths = 6,
+    this.isCustom = false,
+    this.customStart,
+    this.customEnd,
     this.currency = '',
     this.months = const <MonthStat>[],
     this.topCategories = const <CategorySpend>[],
@@ -69,7 +72,18 @@ final class InsightsState extends Equatable {
   });
 
   final bool isLoading;
+
+  /// Number of months in the selected range (preset length, or the span of a
+  /// custom range).
   final int rangeMonths;
+
+  /// Whether the range is a user-picked custom span rather than a preset.
+  final bool isCustom;
+
+  /// The first/last month of a custom range (month-normalized), else null.
+  final DateTime? customStart;
+  final DateTime? customEnd;
+
   final String currency;
 
   /// Chronological (oldest → current).
@@ -97,10 +111,17 @@ final class InsightsState extends Equatable {
   int get monthsOverBudget =>
       checks.where((MonthBudgetCheck c) => c.exceeded).length;
 
+  /// Average spending per month across the range.
+  double get avgMonthlySpending =>
+      rangeMonths == 0 ? 0 : totalSpending / rangeMonths;
+
   @override
   List<Object?> get props => <Object?>[
         isLoading,
         rangeMonths,
+        isCustom,
+        customStart,
+        customEnd,
         currency,
         months,
         topCategories,
