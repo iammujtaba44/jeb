@@ -38,6 +38,22 @@ class _AmountCurrencyFieldState extends State<AmountCurrencyField> {
     super.dispose();
   }
 
+  static String _format(double v) => v % 1 == 0
+      ? v.toInt().toString()
+      : double.parse(v.toStringAsFixed(2)).toString();
+
+  /// Reflects an amount changed elsewhere (e.g. the "Use €X" conversion) in the
+  /// field, without disturbing the user's own typing.
+  void _syncFromState(double amount) {
+    final double current = double.tryParse(_controller.text) ?? 0;
+    if ((current - amount).abs() < 0.001) return;
+    final String text = amount <= 0 ? '' : _format(amount);
+    _controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
@@ -48,71 +64,78 @@ class _AmountCurrencyFieldState extends State<AmountCurrencyField> {
       ),
     );
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(
-                'AMOUNT',
-                style: textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  letterSpacing: 1,
-                ),
-              ),
-              _CurrencyChip(code: currency.code),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                currency.symbol,
-                style: textTheme.headlineMedium?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  autofocus: widget.initialAmount == null,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                  ],
-                  style: textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+    return BlocListener<AddTransactionCubit, AddTransactionState>(
+      listenWhen: (AddTransactionState p, AddTransactionState c) =>
+          p.amount != c.amount,
+      listener: (BuildContext context, AddTransactionState state) =>
+          _syncFromState(state.amount),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.lg,
+        ),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  'AMOUNT',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    letterSpacing: 1,
                   ),
-                  decoration: const InputDecoration(
-                    isCollapsed: true,
-                    filled: false,
-                    border: InputBorder.none,
-                    hintText: '0.00',
-                  ),
-                  onChanged: (String value) => context
-                      .read<AddTransactionCubit>()
-                      .amountChanged(double.tryParse(value) ?? 0),
                 ),
-              ),
-            ],
-          ),
-        ],
+                _CurrencyChip(code: currency.code),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  currency.symbol,
+                  style: textTheme.headlineMedium?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    autofocus: widget.initialAmount == null,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                    ],
+                    style: textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: const InputDecoration(
+                      isCollapsed: true,
+                      filled: false,
+                      border: InputBorder.none,
+                      hintText: '0.00',
+                    ),
+                    onChanged: (String value) => context
+                        .read<AddTransactionCubit>()
+                        .amountChanged(double.tryParse(value) ?? 0),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -134,8 +157,10 @@ class _CurrencyChip extends StatelessWidget {
 
   Future<void> _pickCurrency(BuildContext context) async {
     final AddTransactionCubit cubit = context.read<AddTransactionCubit>();
-    final String? picked =
-        await showCurrencyPicker(context, selected: cubit.state.currencyCode);
+    final String? picked = await showCurrencyPicker(
+      context,
+      selected: cubit.state.currencyCode,
+    );
     if (picked != null) cubit.currencyChanged(picked);
   }
 }

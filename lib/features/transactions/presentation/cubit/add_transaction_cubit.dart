@@ -90,6 +90,15 @@ class AddTransactionCubit extends Cubit<AddTransactionState> {
   void currencyChanged(String currencyCode) =>
       emit(state.copyWith(currencyCode: currencyCode));
 
+  /// Switches the transaction to [toCurrency] at the already-converted
+  /// [convertedAmount] (rounded to cents) — used by the inline "Use €X" hint.
+  void applyConversion(String toCurrency, double convertedAmount) =>
+      emit(state.copyWith(
+        currencyCode: toCurrency,
+        amount: double.parse(convertedAmount.toStringAsFixed(2)),
+        status: AddTransactionStatus.editing,
+      ));
+
   void noteChanged(String note) => emit(state.copyWith(note: note));
 
   void dateChanged(DateTime date) => emit(state.copyWith(date: date));

@@ -29,6 +29,10 @@ class JebApp extends StatelessWidget {
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: _toThemeMode(state.settings.themeMode),
+            // The lock wraps the whole navigator so it covers every route,
+            // dialog, and bottom sheet — not just the first page.
+            builder: (BuildContext context, Widget? child) =>
+                AppLockGate(child: child ?? const SizedBox.shrink()),
             home: _home(state),
           ),
         );
@@ -43,7 +47,7 @@ class JebApp extends StatelessWidget {
     if (!state.settings.onboardingComplete) {
       return const OnboardingPage();
     }
-    return const AppLockGate(child: MainShell());
+    return const MainShell();
   }
 
   ThemeMode _toThemeMode(AppThemeMode mode) => switch (mode) {

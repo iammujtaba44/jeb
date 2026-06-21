@@ -8,8 +8,10 @@ import 'package:jeb/core/widgets/face_id_icon.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:local_auth/local_auth.dart';
 
-/// Wraps the app: when app lock is enabled, requires biometric/passcode auth
-/// before showing [child], and re-locks whenever the app is backgrounded.
+/// Overlays a biometric lock above the entire app when app lock is enabled.
+/// Locks on a cold start, and re-locks on resume only after the app has been
+/// in the background longer than [_gracePeriod] — so brief system excursions
+/// (image picker, share sheet, Face ID prompt) don't force a re-auth.
 class AppLockGate extends StatefulWidget {
   const AppLockGate({required this.child, super.key});
 
@@ -21,6 +23,10 @@ class AppLockGate extends StatefulWidget {
 
 class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   bool _locked = true;
+  DateTime? _backgroundedAt;
+
+  /// How long the app can be away before it re-locks on return.
+  static const Duration _gracePeriod = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -37,13 +43,19 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
-    final bool enabled =
-        context.read<SettingsCubit>().state.settings.appLockEnabled;
-    if (!enabled) return;
-    final bool backgrounded =
-        state == AppLifecycleState.paused || state == AppLifecycleState.hidden;
-    if (backgrounded && !_locked) {
-      setState(() => _locked = true);
+    if (!context.read<SettingsCubit>().state.settings.appLockEnabled) return;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _backgroundedAt ??= DateTime.now();
+    } else if (state == AppLifecycleState.resumed) {
+      final DateTime? since = _backgroundedAt;
+      _backgroundedAt = null;
+      if (!_locked &&
+          since != null &&
+          DateTime.now().difference(since) > _gracePeriod) {
+        setState(() => _locked = true);
+      }
     }
   }
 
@@ -52,11 +64,18 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     final bool enabled = context.select<SettingsCubit, bool>(
       (SettingsCubit cubit) => cubit.state.settings.appLockEnabled,
     );
-    if (!enabled || !_locked) return widget.child;
-    return _LockScreen(
-      onUnlocked: () {
-        if (mounted) setState(() => _locked = false);
-      },
+    return Stack(
+      children: <Widget>[
+        widget.child,
+        if (enabled && _locked)
+          Positioned.fill(
+            child: _LockScreen(
+              onUnlocked: () {
+                if (mounted) setState(() => _locked = false);
+              },
+            ),
+          ),
+      ],
     );
   }
 }

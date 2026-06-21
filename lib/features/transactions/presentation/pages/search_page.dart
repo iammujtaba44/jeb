@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/theme/app_colors.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
+import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
@@ -202,9 +203,24 @@ class _Results extends StatelessWidget {
                 state.criteria.query.trim().isNotEmpty,
           );
         }
+        final String currency =
+            context.read<SettingsCubit>().state.settings.defaultCurrencyCode;
+        double net = 0;
+        for (final Transaction t in state.results) {
+          final double home = CurrencyConverter.convert(
+            amount: t.amount,
+            from: t.currencyCode,
+            to: currency,
+          );
+          net += t.type == TransactionType.income ? home : -home;
+        }
         return Column(
           children: <Widget>[
-            _CountBar(count: state.results.length),
+            _CountBar(
+              count: state.results.length,
+              total: net,
+              currency: currency,
+            ),
             Expanded(
               child: ListView.separated(
                 itemCount: state.results.length,
@@ -229,12 +245,21 @@ class _Results extends StatelessWidget {
 }
 
 class _CountBar extends StatelessWidget {
-  const _CountBar({required this.count});
+  const _CountBar({
+    required this.count,
+    required this.total,
+    required this.currency,
+  });
 
   final int count;
+  final double total;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final bool positive = total >= 0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -242,15 +267,24 @@ class _CountBar extends StatelessWidget {
         AppSpacing.md,
         AppSpacing.xs,
       ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '$count ${count == 1 ? 'transaction' : 'transactions'}',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Text(
+            '$count ${count == 1 ? 'transaction' : 'transactions'}',
+            style: textTheme.labelMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            '${positive ? '+' : '−'}${MoneyFormatter.compact(total.abs(), currency)}',
+            style: textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: positive ? const Color(0xFF16A34A) : scheme.error,
+            ),
+          ),
+        ],
       ),
     );
   }
