@@ -1,7 +1,7 @@
 name: jeb
 description: "Jeb — a private, local-first expense tracker."
 publish_to: "none"
-version: 1.0.0+2
+version: 1.0.0+3
 
 homepage: https://www.mujtaba.cc
 repository: https://github.com/iammujtaba44/jeb

@@ -111,10 +111,12 @@ Future<void> _refreshAll(BuildContext context) async {
   ]);
 }
 
-Future<void> _openSearch(BuildContext context) async {
+/// [autofocus] raises the keyboard immediately — true for the search icon
+/// (you came to search), false for "View all" (you came to browse).
+Future<void> _openSearch(BuildContext context, {bool autofocus = true}) async {
   final TransactionsCubit cubit = context.read<TransactionsCubit>();
   await Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(builder: (_) => const SearchPage()),
+    MaterialPageRoute<void>(builder: (_) => SearchPage(autofocus: autofocus)),
   );
   await cubit.refresh();
 }
@@ -224,7 +226,7 @@ class _LoadedContent extends StatelessWidget {
           SliverToBoxAdapter(
             child: _RecentHeader(
               hasMore: state.transactions.length > _recentLimit,
-              onViewAll: () => _openSearch(context),
+              onViewAll: () => _openSearch(context, autofocus: false),
             ),
           ),
           SliverList.builder(

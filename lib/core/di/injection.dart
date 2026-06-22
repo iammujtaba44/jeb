@@ -319,6 +319,8 @@ Future<void> configureDependencies() async {
       () => SearchCubit(
         searchTransactions: getIt<SearchTransactions>(),
         getCategories: getIt<GetCategories>(),
+        deleteTransaction: getIt<DeleteTransaction>(),
+        addTransaction: getIt<AddTransaction>(),
       ),
     )
     ..registerFactory<AddTransactionCubit>(

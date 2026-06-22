@@ -6,6 +6,7 @@ import 'package:jeb/core/theme/app_colors.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
@@ -16,19 +17,25 @@ import 'package:jeb/features/transactions/presentation/widgets/category_avatar.d
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class SearchPage extends StatelessWidget {
-  const SearchPage({super.key});
+  /// Whether to focus the search field (and raise the keyboard) on open.
+  /// True when opened to search; false when opened to browse ("View all").
+  const SearchPage({this.autofocus = true, super.key});
+
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SearchCubit>(
       create: (_) => getIt<SearchCubit>()..init(),
-      child: const SearchView(),
+      child: SearchView(autofocus: autofocus),
     );
   }
 }
 
 class SearchView extends StatelessWidget {
-  const SearchView({super.key});
+  const SearchView({required this.autofocus, super.key});
+
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +52,7 @@ class SearchView extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: TextField(
-                autofocus: true,
+                autofocus: autofocus,
                 textInputAction: TextInputAction.search,
                 decoration: const InputDecoration(
                   isCollapsed: true,
@@ -76,7 +83,8 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SearchCubit, SearchState>(
-      buildWhen: (SearchState p, SearchState c) => p.criteria != c.criteria,
+      buildWhen: (SearchState p, SearchState c) =>
+          p.criteria != c.criteria || p.categories != c.categories,
       builder: (BuildContext context, SearchState state) {
         final SearchCubit cubit = context.read<SearchCubit>();
         final TransactionType? type = state.criteria.type;
@@ -228,11 +236,17 @@ class _Results extends StatelessWidget {
                     const Divider(height: 1, indent: 72),
                 itemBuilder: (BuildContext context, int index) {
                   final Transaction transaction = state.results[index];
-                  return _SearchResultTile(
-                    transaction: transaction,
-                    category: state.categoriesById[transaction.categoryId],
-                    onTap: () =>
-                        _openEdit(context, transaction, state.categories),
+                  return Dismissible(
+                    key: ValueKey<String>(transaction.id),
+                    direction: DismissDirection.endToStart,
+                    background: const _DeleteBackground(),
+                    onDismissed: (_) => _handleDelete(context, transaction),
+                    child: _SearchResultTile(
+                      transaction: transaction,
+                      category: state.categoriesById[transaction.categoryId],
+                      onTap: () =>
+                          _openEdit(context, transaction, state.categories),
+                    ),
                   );
                 },
               ),
@@ -433,6 +447,36 @@ class _CategoryFilterSheet extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(c.id),
             ),
         ],
+      ),
+    );
+  }
+}
+
+void _handleDelete(BuildContext context, Transaction transaction) {
+  final SearchCubit cubit = context.read<SearchCubit>();
+  HapticFeedback.mediumImpact();
+  cubit.delete(transaction);
+  AppSnackbar.show(
+    context,
+    'Transaction deleted',
+    actionLabel: 'Undo',
+    onAction: () => cubit.restore(transaction),
+  );
+}
+
+class _DeleteBackground extends StatelessWidget {
+  const _DeleteBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.expense,
+      child: const Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Icon(Icons.delete_outline, color: Colors.white),
+        ),
       ),
     );
   }

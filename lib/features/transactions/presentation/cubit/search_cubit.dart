@@ -5,6 +5,8 @@ import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/search_criteria.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction_type.dart';
+import 'package:jeb/features/transactions/domain/usecases/add_transaction.dart';
+import 'package:jeb/features/transactions/domain/usecases/delete_transaction.dart';
 import 'package:jeb/features/transactions/domain/usecases/get_categories.dart';
 import 'package:jeb/features/transactions/domain/usecases/search_transactions.dart';
 
@@ -16,12 +18,18 @@ class SearchCubit extends Cubit<SearchState> {
   SearchCubit({
     required SearchTransactions searchTransactions,
     required GetCategories getCategories,
+    required DeleteTransaction deleteTransaction,
+    required AddTransaction addTransaction,
   })  : _searchTransactions = searchTransactions,
         _getCategories = getCategories,
+        _deleteTransaction = deleteTransaction,
+        _addTransaction = addTransaction,
         super(const SearchState());
 
   final SearchTransactions _searchTransactions;
   final GetCategories _getCategories;
+  final DeleteTransaction _deleteTransaction;
+  final AddTransaction _addTransaction;
 
   Future<void> init() async {
     final result = await _getCategories(const NoParams());
@@ -52,6 +60,20 @@ class SearchCubit extends Cubit<SearchState> {
       _apply(SearchCriteria(query: state.criteria.query));
 
   Future<void> refresh() => _apply(state.criteria);
+
+  /// Soft-deletes a transaction and refreshes the results.
+  Future<void> delete(Transaction transaction) async {
+    await _deleteTransaction(transaction.id);
+    if (isClosed) return;
+    await _apply(state.criteria);
+  }
+
+  /// Re-adds a previously deleted transaction (undo).
+  Future<void> restore(Transaction transaction) async {
+    await _addTransaction(transaction);
+    if (isClosed) return;
+    await _apply(state.criteria);
+  }
 
   Future<void> _apply(SearchCriteria criteria) async {
     emit(state.copyWith(criteria: criteria, isLoading: true));
