@@ -1,9 +1,11 @@
 /// The nature of a [Plan]: something you're building toward owning, a debt
-/// you're paying down, or a giving/charity obligation (zakat, sadqa).
+/// you're paying down, a giving/charity obligation (zakat, sadqa), or a
+/// refundable deposit (e.g. a flat/shop security deposit) you expect back.
 enum PlanKind {
   asset,
   loan,
-  giving;
+  giving,
+  deposit;
 
   String get storageValue => name;
 
@@ -16,6 +18,7 @@ enum PlanKind {
         PlanKind.asset => 'Asset',
         PlanKind.loan => 'Loan',
         PlanKind.giving => 'Giving',
+        PlanKind.deposit => 'Deposit',
       };
 
   /// Verb describing money put toward this kind of plan.
@@ -23,5 +26,6 @@ enum PlanKind {
         PlanKind.asset => 'Saved',
         PlanKind.loan => 'Paid off',
         PlanKind.giving => 'Given',
+        PlanKind.deposit => 'Deposited',
       };
 }

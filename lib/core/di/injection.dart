@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:jeb/core/services/export_service.dart';
 import 'package:jeb/core/services/forex_service.dart';
 import 'package:jeb/core/services/google_drive_auth.dart';
+import 'package:jeb/core/services/home_widget_service.dart';
 import 'package:jeb/core/services/notification_service.dart';
 import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/features/accounts/data/datasources/accounts_local_datasource.dart';
@@ -237,6 +238,15 @@ Future<void> configureDependencies() async {
       () => DeleteTransfer(getIt<AccountsRepository>()),
     );
 
+  // ── Home-screen widgets ──────────────────────────────────────────────
+  getIt.registerLazySingleton<HomeWidgetService>(
+    () => HomeWidgetService(
+      getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
+      getBudgets: getIt<GetBudgets>(),
+      getSettings: getIt<GetSettings>(),
+    ),
+  );
+
   // ── Domain: use cases ────────────────────────────────────────────────
   getIt
     ..registerLazySingleton<GetTransactionsForMonth>(
@@ -276,6 +286,7 @@ Future<void> configureDependencies() async {
         addTransaction: getIt<AddTransaction>(),
         getBudgets: getIt<GetBudgets>(),
         materializeDueTransactions: getIt<MaterializeDueTransactions>(),
+        homeWidgetService: getIt<HomeWidgetService>(),
       ),
     )
     ..registerFactory<BudgetsCubit>(
@@ -286,6 +297,7 @@ Future<void> configureDependencies() async {
         getCategories: getIt<GetCategories>(),
         getTransactionsForMonth: getIt<GetTransactionsForMonth>(),
         getSettings: getIt<GetSettings>(),
+        homeWidgetService: getIt<HomeWidgetService>(),
       ),
     )
     ..registerFactory<InsightsCubit>(

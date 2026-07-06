@@ -5,6 +5,7 @@ import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/plans/domain/entities/plan.dart';
+import 'package:jeb/features/plans/domain/entities/plan_kind.dart';
 import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/pages/plan_detail_page.dart';
 import 'package:jeb/features/plans/presentation/pages/plan_editor_page.dart';
@@ -190,7 +191,22 @@ class _PlanCard extends StatelessWidget {
     final TextTheme textTheme = Theme.of(context).textTheme;
     final Color color = PlanKindVisuals.color(plan.kind);
     final double? progress = plan.progress(paid);
-    final bool done = plan.isComplete(paid);
+    final bool done =
+        plan.kind == PlanKind.deposit ? plan.isReturned : plan.isComplete(paid);
+
+    String subtitle =
+        '${plan.kind.contributeVerb} '
+        '${MoneyFormatter.compact(paid, plan.currencyCode)}'
+        '${plan.hasTarget ? ' of ${MoneyFormatter.compact(plan.targetAmount!, plan.currencyCode)}' : ''}';
+    if (plan.kind == PlanKind.deposit) {
+      if (plan.isReturned) {
+        subtitle += ' · returned ${DateFormatter.dayMonth(plan.returnedDate!)}';
+      } else if (plan.dueDate != null) {
+        subtitle += plan.isOverdue
+            ? ' · was due ${DateFormatter.dayMonth(plan.dueDate!)}'
+            : ' · back by ${DateFormatter.dayMonth(plan.dueDate!)}';
+      }
+    }
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -223,11 +239,11 @@ class _PlanCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${plan.kind.contributeVerb} '
-                          '${MoneyFormatter.compact(paid, plan.currencyCode)}'
-                          '${plan.hasTarget ? ' of ${MoneyFormatter.compact(plan.targetAmount!, plan.currencyCode)}' : ''}',
+                          subtitle,
                           style: textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
+                            color: plan.isOverdue
+                                ? const Color(0xFFF59E0B)
+                                : scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -291,8 +307,8 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Track installments, loans, or zakat. Tap + to add a plan and '
-              'log payments toward it.',
+              'Track installments, loans, zakat, or refundable security '
+              'deposits. Tap + to add a plan and log payments toward it.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,

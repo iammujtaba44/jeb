@@ -76,6 +76,10 @@ class PlansCubit extends Cubit<PlansState> {
       } else if (p.kind == PlanKind.loan) {
         liabilities += toHome(p.remaining(paidAmount));
         hasNetWorth = true;
+      } else if (p.kind == PlanKind.deposit && !p.isReturned) {
+        // Money parked with someone else is still yours until returned.
+        assets += toHome(paidAmount);
+        hasNetWorth = true;
       }
     }
 
@@ -101,6 +105,10 @@ class PlansCubit extends Cubit<PlansState> {
     await _deletePlan(id);
     await load();
   }
+
+  /// Marks a deposit as returned on [date] (or outstanding again when null).
+  Future<void> setReturned(Plan plan, DateTime? date) =>
+      savePlan(plan.withReturnedDate(date));
 
   Future<List<PlanPayment>> loadPayments(String planId) async {
     final result = await _getPlanPayments(planId);

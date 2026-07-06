@@ -10,6 +10,7 @@ import 'package:jeb/core/services/receipt_store.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/features/plans/domain/entities/plan.dart';
+import 'package:jeb/features/plans/domain/entities/plan_kind.dart';
 import 'package:jeb/features/plans/domain/entities/plan_payment.dart';
 import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/pages/plan_editor_page.dart';
@@ -271,9 +272,113 @@ class _Header extends StatelessWidget {
                 ],
               ),
             ],
+            if (plan.kind == PlanKind.deposit) ...<Widget>[
+              const SizedBox(height: AppSpacing.md),
+              _DepositStatus(plan: plan),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Deposit-only header section: expected-back date plus the returned /
+/// outstanding toggle.
+class _DepositStatus extends StatelessWidget {
+  const _DepositStatus({required this.plan});
+
+  final Plan plan;
+
+  static const Color _amber = Color(0xFFF59E0B);
+
+  Future<void> _markReturned(BuildContext context) async {
+    final PlansCubit cubit = context.read<PlansCubit>();
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: plan.startDate,
+      lastDate: DateTime(2100),
+      helpText: 'When was the deposit returned?',
+    );
+    if (picked == null) return;
+    HapticFeedback.selectionClick();
+    await cubit.setReturned(
+      plan,
+      DateTime(picked.year, picked.month, picked.day),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    final Color color = PlanKindVisuals.color(plan.kind);
+
+    if (plan.isReturned) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.check_circle, color: color, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Returned on ${DateFormatter.fullDate(plan.returnedDate!)}',
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () =>
+                  context.read<PlansCubit>().setReturned(plan, null),
+              child: const Text('Undo'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (plan.dueDate != null) ...<Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.event_repeat_outlined,
+                size: 18,
+                color: plan.isOverdue ? _amber : scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                plan.isOverdue
+                    ? 'Was expected back ${DateFormatter.fullDate(plan.dueDate!)}'
+                    : 'Expected back ${DateFormatter.fullDate(plan.dueDate!)}',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: plan.isOverdue ? _amber : scheme.onSurfaceVariant,
+                  fontWeight: plan.isOverdue ? FontWeight.w600 : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonalIcon(
+            onPressed: () => _markReturned(context),
+            icon: const Icon(Icons.assignment_return_outlined, size: 20),
+            label: const Text('Mark as returned'),
+          ),
+        ),
+      ],
     );
   }
 }

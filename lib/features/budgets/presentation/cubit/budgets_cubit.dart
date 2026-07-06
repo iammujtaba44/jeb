@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jeb/core/services/home_widget_service.dart';
 import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/features/budgets/domain/entities/budget.dart';
@@ -17,8 +20,8 @@ import 'package:jeb/features/transactions/domain/usecases/get_transactions_for_m
 part 'budgets_state.dart';
 
 /// Manages the budgets screen: shows each expense category's limit alongside
-/// how much has been spent this month (converted to the home currency), plus
-/// the overall monthly limit, and persists changes.
+/// how much has been spent in the selected month (converted to the home
+/// currency), plus the overall monthly limit, and persists changes.
 class BudgetsCubit extends Cubit<BudgetsState> {
   BudgetsCubit({
     required GetBudgets getBudgets,
@@ -27,7 +30,9 @@ class BudgetsCubit extends Cubit<BudgetsState> {
     required GetCategories getCategories,
     required GetTransactionsForMonth getTransactionsForMonth,
     required GetSettings getSettings,
-  })  : _getBudgets = getBudgets,
+    HomeWidgetService? homeWidgetService,
+  })  : _homeWidgetService = homeWidgetService,
+        _getBudgets = getBudgets,
         _setBudget = setBudget,
         _removeBudget = removeBudget,
         _getCategories = getCategories,
@@ -41,9 +46,22 @@ class BudgetsCubit extends Cubit<BudgetsState> {
   final GetCategories _getCategories;
   final GetTransactionsForMonth _getTransactionsForMonth;
   final GetSettings _getSettings;
+  final HomeWidgetService? _homeWidgetService;
 
-  Future<void> load() async {
-    final DateTime month = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime _month = _firstOfThisMonth();
+
+  static DateTime _firstOfThisMonth() {
+    final DateTime now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  /// Reloads the screen, optionally switching to [month] (e.g. the month
+  /// selected on Home). Future months are ignored.
+  Future<void> load({DateTime? month}) async {
+    if (month != null) {
+      final DateTime normalized = DateTime(month.year, month.month);
+      if (!normalized.isAfter(_firstOfThisMonth())) _month = normalized;
+    }
 
     final settingsResult = await _getSettings(const NoParams());
     final String currency = settingsResult.fold(
@@ -53,7 +71,7 @@ class BudgetsCubit extends Cubit<BudgetsState> {
 
     final categoriesResult = await _getCategories(const NoParams());
     final budgetsResult = await _getBudgets(const NoParams());
-    final transactionsResult = await _getTransactionsForMonth(month);
+    final transactionsResult = await _getTransactionsForMonth(_month);
 
     final List<Category> expenseCategories = categoriesResult.fold(
       (_) => const <Category>[],
@@ -74,7 +92,7 @@ class BudgetsCubit extends Cubit<BudgetsState> {
       }
     });
 
-    // Spend per category + overall this month, converted to the home currency.
+    // Spend per category + overall for the month, converted to home currency.
     final Map<String, double> categorySpent = <String, double>{};
     double totalSpent = 0;
     transactionsResult.fold((_) {}, (List<Transaction> transactions) {
@@ -96,6 +114,7 @@ class BudgetsCubit extends Cubit<BudgetsState> {
       BudgetsState(
         isLoading: false,
         currency: currency,
+        month: _month,
         categories: expenseCategories,
         overallLimit: overall,
         categoryLimits: categoryLimits,
@@ -104,6 +123,9 @@ class BudgetsCubit extends Cubit<BudgetsState> {
       ),
     );
   }
+
+  /// Jump to any (non-future) month.
+  Future<void> goToMonth(DateTime month) => load(month: month);
 
   Future<void> setOverall(double? amount) =>
       _apply(null, amount);
@@ -117,6 +139,9 @@ class BudgetsCubit extends Cubit<BudgetsState> {
     } else {
       await _setBudget(Budget(categoryId: categoryId, limitAmount: amount));
     }
+    // The home-screen widget shows the overall limit — keep it in step.
+    final HomeWidgetService? widgets = _homeWidgetService;
+    if (widgets != null) unawaited(widgets.push());
     await load();
   }
 }

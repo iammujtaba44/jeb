@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Metadata for the Jeb home-screen widget. updatePeriodMillis is 0 because
+     the app pushes updates itself whenever data changes. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/jeb_widget_description"
+    android:initialLayout="@layout/jeb_widget"
+    android:minWidth="250dp"
+    android:minHeight="70dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="0" />

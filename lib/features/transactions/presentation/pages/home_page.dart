@@ -136,10 +136,88 @@ class _HomeBody extends StatelessWidget {
             ),
           TransactionsLoaded() => RefreshIndicator(
               onRefresh: () => _refreshAll(context),
-              child: _LoadedContent(state: state),
+              child: _MonthSwipe(
+                month: state.month,
+                child: _LoadedContent(state: state),
+              ),
             ),
         };
       },
+    );
+  }
+}
+
+/// Horizontal swipe anywhere on the dashboard steps between months (left =
+/// forward, right = back), with a directional slide as the new month loads.
+class _MonthSwipe extends StatefulWidget {
+  const _MonthSwipe({required this.month, required this.child});
+
+  final DateTime month;
+  final Widget child;
+
+  @override
+  State<_MonthSwipe> createState() => _MonthSwipeState();
+}
+
+class _MonthSwipeState extends State<_MonthSwipe> {
+  static const double _minFlingVelocity = 250;
+
+  /// +1 when moving forward in time, -1 when moving back — drives the slide.
+  int _direction = 0;
+  late DateTime _lastMonth = widget.month;
+
+  @override
+  void didUpdateWidget(_MonthSwipe oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.month != _lastMonth) {
+      _direction = widget.month.isAfter(_lastMonth) ? 1 : -1;
+      _lastMonth = widget.month;
+    }
+  }
+
+  void _onDragEnd(BuildContext context, DragEndDetails details) {
+    final double velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < _minFlingVelocity) return;
+    final TransactionsCubit cubit = context.read<TransactionsCubit>();
+    HapticFeedback.selectionClick();
+    if (velocity < 0) {
+      cubit.goToNextMonth(); // swipe left → forward (no-op on current month)
+    } else {
+      cubit.goToPreviousMonth();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (DragEndDetails d) => _onDragEnd(context, d),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          // The incoming month slides in from the side it was swiped toward;
+          // the first build (direction 0) just fades.
+          final Offset begin = Offset(0.12 * _direction, 0);
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: begin, end: Offset.zero)
+                  .animate(animation),
+              child: child,
+            ),
+          );
+        },
+        layoutBuilder: (Widget? current, List<Widget> previous) => Stack(
+          fit: StackFit.expand,
+          children: <Widget>[...previous, if (current != null) current],
+        ),
+        child: KeyedSubtree(
+          key: ValueKey<DateTime>(widget.month),
+          child: widget.child,
+        ),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/features/accounts/presentation/cubit/accounts_cubit.dart';
+import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
 import 'package:jeb/features/budgets/presentation/pages/budgets_page.dart';
 import 'package:jeb/features/plans/presentation/cubit/plans_cubit.dart';
 import 'package:jeb/features/plans/presentation/pages/plans_page.dart';
@@ -35,6 +36,11 @@ class MainShell extends StatelessWidget {
         ),
         BlocProvider<PlansCubit>(
           create: (_) => getIt<PlansCubit>()..load(),
+        ),
+        // Provided here (not inside BudgetsPage) so the Budgets tab can follow
+        // the month selected on Home and reload on every visit.
+        BlocProvider<BudgetsCubit>(
+          create: (_) => getIt<BudgetsCubit>()..load(),
         ),
       ],
       child: const _ShellScaffold(),
@@ -87,6 +93,11 @@ class _ShellScaffoldState extends State<_ShellScaffold>
       context.read<TransactionsCubit>().refresh();
       context.read<AccountsCubit>().load();
       context.read<PlansCubit>().load();
+    } else if (index == 1) {
+      // Show the same month the user is viewing on Home.
+      context
+          .read<BudgetsCubit>()
+          .load(month: context.read<TransactionsCubit>().month);
     }
   }
 
@@ -95,6 +106,7 @@ class _ShellScaffoldState extends State<_ShellScaffold>
     final TransactionsCubit transactionsCubit =
         context.read<TransactionsCubit>();
     final AccountsCubit accountsCubit = context.read<AccountsCubit>();
+    final BudgetsCubit budgetsCubit = context.read<BudgetsCubit>();
     final String currency =
         context.read<SettingsCubit>().state.settings.defaultCurrencyCode;
 
@@ -115,6 +127,8 @@ class _ShellScaffoldState extends State<_ShellScaffold>
       await transactionsCubit.refresh();
       // Keep the home account balances in sync with the new transaction.
       await accountsCubit.load();
+      // And the budget spend figures.
+      await budgetsCubit.load();
     }
   }
 

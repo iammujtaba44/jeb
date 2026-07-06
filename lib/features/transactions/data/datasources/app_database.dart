@@ -92,6 +92,22 @@ final class AppDatabase {
         // Column already present (table created fresh with the latest schema).
       }
     }
+    if (oldVersion < 10) {
+      // Deposit plans: expected-back and returned dates.
+      for (final String column in <String>[
+        DbConstants.columnDueDate,
+        DbConstants.columnReturnedDate,
+      ]) {
+        try {
+          await db.execute(
+            'ALTER TABLE ${DbConstants.plansTable} '
+            'ADD COLUMN $column INTEGER',
+          );
+        } catch (_) {
+          // Column already present (table created fresh with latest schema).
+        }
+      }
+    }
   }
 
   Future<void> _seedCategories(Database db) async {
@@ -164,6 +180,8 @@ final class AppDatabase {
       '${DbConstants.columnCurrencyCode} TEXT NOT NULL, '
       '${DbConstants.columnNote} TEXT, '
       '${DbConstants.columnDate} INTEGER NOT NULL, '
+      '${DbConstants.columnDueDate} INTEGER, '
+      '${DbConstants.columnReturnedDate} INTEGER, '
       '${DbConstants.columnUpdatedAt} INTEGER NOT NULL, '
       '${DbConstants.columnIsDeleted} INTEGER NOT NULL DEFAULT 0'
       ')';

@@ -13,6 +13,8 @@ class Plan extends Equatable {
     this.targetAmount,
     this.installmentAmount,
     this.note,
+    this.dueDate,
+    this.returnedDate,
   });
 
   final String id;
@@ -29,7 +31,22 @@ class Plan extends Equatable {
 
   final String? note;
 
+  /// When a [PlanKind.deposit] is expected to be paid back (optional).
+  final DateTime? dueDate;
+
+  /// When a [PlanKind.deposit] was actually returned; null while outstanding.
+  final DateTime? returnedDate;
+
   bool get hasTarget => targetAmount != null && targetAmount! > 0;
+
+  bool get isReturned => returnedDate != null;
+
+  /// A deposit whose expected-back date has passed without being returned.
+  bool get isOverdue =>
+      kind == PlanKind.deposit &&
+      !isReturned &&
+      dueDate != null &&
+      dueDate!.isBefore(DateTime.now());
 
   /// Fraction complete given an amount [paid] so far (0..1), or null if there's
   /// no target to measure against.
@@ -59,6 +76,8 @@ class Plan extends Equatable {
     double? targetAmount,
     double? installmentAmount,
     String? note,
+    DateTime? dueDate,
+    DateTime? returnedDate,
   }) {
     return Plan(
       id: id,
@@ -69,6 +88,25 @@ class Plan extends Equatable {
       targetAmount: targetAmount ?? this.targetAmount,
       installmentAmount: installmentAmount ?? this.installmentAmount,
       note: note ?? this.note,
+      dueDate: dueDate ?? this.dueDate,
+      returnedDate: returnedDate ?? this.returnedDate,
+    );
+  }
+
+  /// [copyWith] can't clear a nullable field; this sets [returnedDate]
+  /// explicitly (pass null to mark the deposit as outstanding again).
+  Plan withReturnedDate(DateTime? date) {
+    return Plan(
+      id: id,
+      name: name,
+      kind: kind,
+      currencyCode: currencyCode,
+      startDate: startDate,
+      targetAmount: targetAmount,
+      installmentAmount: installmentAmount,
+      note: note,
+      dueDate: dueDate,
+      returnedDate: date,
     );
   }
 
@@ -82,5 +120,7 @@ class Plan extends Equatable {
         targetAmount,
         installmentAmount,
         note,
+        dueDate,
+        returnedDate,
       ];
 }

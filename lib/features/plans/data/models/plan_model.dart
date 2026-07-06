@@ -14,6 +14,8 @@ final class PlanModel extends Plan {
     super.targetAmount,
     super.installmentAmount,
     super.note,
+    super.dueDate,
+    super.returnedDate,
     this.isDeleted = false,
   });
 
@@ -30,6 +32,8 @@ final class PlanModel extends Plan {
       targetAmount: p.targetAmount,
       installmentAmount: p.installmentAmount,
       note: p.note,
+      dueDate: p.dueDate,
+      returnedDate: p.returnedDate,
       updatedAt: updatedAt,
     );
   }
@@ -47,12 +51,20 @@ final class PlanModel extends Plan {
       installmentAmount:
           (map[DbConstants.columnInstallmentAmount] as num?)?.toDouble(),
       note: map[DbConstants.columnNote] as String?,
+      dueDate: _epochOrNull(map[DbConstants.columnDueDate]),
+      returnedDate: _epochOrNull(map[DbConstants.columnReturnedDate]),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         map[DbConstants.columnUpdatedAt] as int,
       ),
       isDeleted: (map[DbConstants.columnIsDeleted] as int) == 1,
     );
   }
+
+  /// Millis-since-epoch to DateTime, tolerating absent/null values (rows and
+  /// sync snapshots written before the deposit columns existed).
+  static DateTime? _epochOrNull(Object? value) => value == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(value as int);
 
   DataMap toMap() => <String, dynamic>{
         DbConstants.columnId: id,
@@ -63,6 +75,8 @@ final class PlanModel extends Plan {
         DbConstants.columnCurrencyCode: currencyCode,
         DbConstants.columnNote: note,
         DbConstants.columnDate: startDate.millisecondsSinceEpoch,
+        DbConstants.columnDueDate: dueDate?.millisecondsSinceEpoch,
+        DbConstants.columnReturnedDate: returnedDate?.millisecondsSinceEpoch,
         DbConstants.columnUpdatedAt: updatedAt.millisecondsSinceEpoch,
         DbConstants.columnIsDeleted: isDeleted ? 1 : 0,
       };

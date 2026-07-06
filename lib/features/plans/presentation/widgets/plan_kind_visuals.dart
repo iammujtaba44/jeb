@@ -8,11 +8,13 @@ abstract final class PlanKindVisuals {
         PlanKind.asset => PhosphorIcons.buildings(PhosphorIconsStyle.duotone),
         PlanKind.loan => PhosphorIcons.bank(PhosphorIconsStyle.duotone),
         PlanKind.giving => PhosphorIcons.handHeart(PhosphorIconsStyle.duotone),
+        PlanKind.deposit => PhosphorIcons.vault(PhosphorIconsStyle.duotone),
       };
 
   static Color color(PlanKind kind) => switch (kind) {
         PlanKind.asset => const Color(0xFF0D9488), // teal
         PlanKind.loan => const Color(0xFFF59E0B), // amber
         PlanKind.giving => const Color(0xFFE11D48), // rose
+        PlanKind.deposit => const Color(0xFF6366F1), // indigo
       };
 }

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/app_constants.dart';
+import 'package:jeb/core/services/home_widget_service.dart';
 import 'package:jeb/core/usecase/usecase.dart';
 import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/features/budgets/domain/entities/budget.dart';
@@ -30,7 +33,9 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     required AddTransaction addTransaction,
     required GetBudgets getBudgets,
     required MaterializeDueTransactions materializeDueTransactions,
-  })  : _getTransactionsForMonth = getTransactionsForMonth,
+    HomeWidgetService? homeWidgetService,
+  })  : _homeWidgetService = homeWidgetService,
+        _getTransactionsForMonth = getTransactionsForMonth,
         _getCategories = getCategories,
         _deleteTransaction = deleteTransaction,
         _syncData = syncData,
@@ -48,6 +53,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   final AddTransaction _addTransaction;
   final GetBudgets _getBudgets;
   final MaterializeDueTransactions _materializeDueTransactions;
+  final HomeWidgetService? _homeWidgetService;
 
   DateTime _month = _firstOfThisMonth();
   String _homeCurrency = AppConstants.defaultCurrencyCode;
@@ -136,6 +142,11 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   }
 
   Future<void> _refreshFromCache() async {
+    // Runs after every data change (load/refresh/add/delete/restore), so it's
+    // the one spot that keeps the home-screen widget current. Fire-and-forget.
+    final HomeWidgetService? widgets = _homeWidgetService;
+    if (widgets != null) unawaited(widgets.push());
+
     final categoriesResult = await _getCategories(const NoParams());
     final transactionsResult = await _getTransactionsForMonth(_month);
     if (isClosed) return;

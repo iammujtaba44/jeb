@@ -43,10 +43,14 @@ formatting (Lakh/Crore for South‑Asian currencies, K/M/B otherwise).
 amounts, a per‑account history, and transfers between accounts (cross‑currency
 aware). Archive accounts you no longer use.
 
-**🎯 Plans** — long‑running goals as _assets_, _loans_, or _giving_ (e.g. zakat),
-each with progress and a rolled‑up **net position** (assets − liabilities).
+**🎯 Plans** — long‑running goals as _assets_, _loans_, _giving_ (e.g. zakat),
+or refundable _deposits_ (e.g. a flat's security deposit, with an expected‑back
+date and a "mark as returned" flow), each with progress and a rolled‑up
+**net position** (assets − liabilities).
 
-**📊 Budgets & insights** — an overall and per‑category monthly budget, plus an
+**📊 Budgets & insights** — an overall and per‑category monthly budget with a
+month switcher (it also follows the month picked on Home) to review any past
+month's spend vs. limit, plus an
 Insights screen with a spending‑trend chart, a per‑month budget check (when you
 went over and _why_), top categories, and a savings rate. Pick **3M / 6M / 12M**
 presets (trailing windows that always include the current month) or a **custom
@@ -56,7 +60,12 @@ month range**.
 free, key‑less source, cached on device) with a bundled offline fallback.
 
 **🧩 Customizable home** — drag to reorder and toggle the home dashboard
-sections (summary, accounts, plans, spending, recent).
+sections (summary, accounts, plans, spending, recent), and swipe left/right
+anywhere on the dashboard to step between months.
+
+**📱 Home-screen widgets** — an iOS (WidgetKit) and Android widget showing this
+month's spend with the budget bar, updated automatically as you add
+transactions.
 
 **☁️ Private cloud sync** — to the user's **own iCloud** on Apple and their
 **own Google Drive** on Android (last‑write‑wins merge, soft‑delete tombstones,
@@ -109,7 +118,11 @@ flutter run
 **Backup setup:**
 
 - **iOS / macOS** — uses the user's own iCloud automatically. To run on a
-  physical iPhone, set your own bundle id and iCloud container in Xcode.
+  physical iPhone, set your own bundle id and iCloud container in Xcode — and
+  for the home-screen widget, your own App Group (used by both the Runner and
+  JebWidgetExtension targets; update `group.com.woltrap.jebapp` in both
+  `.entitlements` files and in `HomeWidgetService.appGroupId` +
+  `ios/JebWidget/JebWidget.swift` if you change it).
 - **Android** — backs up to the user's own Google Drive after a one‑time
   Google sign‑in. This needs your own Google Cloud OAuth client — see
   [`docs/google-drive-setup.md`](docs/google-drive-setup.md). Until connected,
@@ -132,9 +145,10 @@ flutter analyze    # static analysis
 ## Roadmap ideas
 
 - Sync the home layout & FX preferences across devices
-- Swipe between months on the home screen
 - Per‑account currency conversion in transfers history
 - More chart types in Insights
+- Budget alert notifications & per‑month budget history
+- Lend/borrow tracker (money owed to/by people)
 
 ## Contributing
 

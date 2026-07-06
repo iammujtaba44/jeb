@@ -50,6 +50,47 @@ void main() {
     });
   });
 
+  group('Deposit plans', () {
+    Plan deposit({DateTime? due, DateTime? returned}) => Plan(
+          id: 'd1',
+          name: 'Flat security deposit',
+          kind: PlanKind.deposit,
+          currencyCode: 'PKR',
+          startDate: DateTime(2026, 1, 1),
+          targetAmount: 100000,
+          dueDate: due,
+          returnedDate: returned,
+        );
+
+    test('isReturned reflects the returned date', () {
+      expect(deposit().isReturned, isFalse);
+      expect(deposit(returned: DateTime(2026, 6, 1)).isReturned, isTrue);
+    });
+
+    test('isOverdue only when past due and not returned', () {
+      expect(deposit(due: DateTime(2020, 1, 1)).isOverdue, isTrue);
+      expect(deposit(due: DateTime(2099, 1, 1)).isOverdue, isFalse);
+      expect(
+        deposit(due: DateTime(2020, 1, 1), returned: DateTime(2020, 2, 1))
+            .isOverdue,
+        isFalse,
+      );
+      expect(deposit().isOverdue, isFalse); // no due date
+    });
+
+    test('withReturnedDate sets and clears the returned date', () {
+      final Plan p = deposit();
+      final Plan returned = p.withReturnedDate(DateTime(2026, 6, 1));
+      expect(returned.isReturned, isTrue);
+      expect(returned.withReturnedDate(null).isReturned, isFalse);
+    });
+
+    test('kind storage falls back to asset for unknown values', () {
+      expect(PlanKind.fromStorage('deposit'), PlanKind.deposit);
+      expect(PlanKind.fromStorage('unknown'), PlanKind.asset);
+    });
+  });
+
   group('models round-trip through the map', () {
     test('PlanModel', () {
       final PlanModel model = PlanModel(
@@ -86,6 +127,33 @@ void main() {
       expect(back.targetAmount, isNull);
       expect(back.installmentAmount, isNull);
       expect(back.hasTarget, isFalse);
+    });
+
+    test('PlanModel round-trips deposit dates and tolerates their absence', () {
+      final PlanModel back = PlanModel.fromMap(
+        PlanModel(
+          id: 'd1',
+          name: 'Shop deposit',
+          kind: PlanKind.deposit,
+          currencyCode: 'PKR',
+          startDate: DateTime(2026, 1, 1),
+          targetAmount: 100000,
+          dueDate: DateTime(2026, 12, 1),
+          returnedDate: DateTime(2026, 12, 15),
+          updatedAt: DateTime(2026, 1, 1),
+        ).toMap(),
+      );
+      expect(back.kind, PlanKind.deposit);
+      expect(back.dueDate, DateTime(2026, 12, 1));
+      expect(back.returnedDate, DateTime(2026, 12, 15));
+
+      // Maps from before v10 (old rows / old sync snapshots) lack the keys.
+      final DataMap legacy = back.toMap()
+        ..remove('due_date')
+        ..remove('returned_date');
+      final PlanModel fromLegacy = PlanModel.fromMap(legacy);
+      expect(fromLegacy.dueDate, isNull);
+      expect(fromLegacy.returnedDate, isNull);
     });
 
     test('PlanPaymentModel', () {

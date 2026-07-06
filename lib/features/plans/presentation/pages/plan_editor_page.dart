@@ -32,6 +32,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   late PlanKind _kind;
   late String _currency;
   late DateTime _startDate;
+  DateTime? _dueDate;
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     _kind = e?.kind ?? PlanKind.asset;
     _currency = e?.currencyCode ?? widget.defaultCurrency;
     _startDate = e?.startDate ?? DateTime.now();
+    _dueDate = e?.dueDate;
   }
 
   static String _num(double? v) =>
@@ -76,9 +78,20 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
     if (picked != null) setState(() => _startDate = picked);
   }
 
+  Future<void> _pickDueDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now(),
+      firstDate: DateTime(2010),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _dueDate = picked);
+  }
+
   void _save() {
     if (!_canSave) return;
     HapticFeedback.selectionClick();
+    final bool isDeposit = _kind == PlanKind.deposit;
     final Plan plan = Plan(
       id: widget.existing?.id ?? getIt<Uuid>().v4(),
       name: _name.text.trim(),
@@ -86,8 +99,11 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
       currencyCode: _currency,
       startDate: DateTime(_startDate.year, _startDate.month, _startDate.day),
       targetAmount: double.tryParse(_target.text.trim()),
-      installmentAmount: double.tryParse(_installment.text.trim()),
+      installmentAmount:
+          isDeposit ? null : double.tryParse(_installment.text.trim()),
       note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+      dueDate: isDeposit ? _dueDate : null,
+      returnedDate: isDeposit ? widget.existing?.returnedDate : null,
     );
     Navigator.of(context).pop(plan);
   }
@@ -96,6 +112,7 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
   Widget build(BuildContext context) {
     final bool editing = widget.existing != null;
     final String symbol = Currencies.byCode(_currency).symbol;
+    final bool isDeposit = _kind == PlanKind.deposit;
 
     return Scaffold(
       appBar: AppBar(title: Text(editing ? 'Edit plan' : 'New plan')),
@@ -110,10 +127,12 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                 autofocus: !editing,
                 onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   filled: false,
                   border: InputBorder.none,
-                  hintText: 'Plan name (e.g. House installments)',
+                  hintText: isDeposit
+                      ? 'Deposit name (e.g. Flat security deposit)'
+                      : 'Plan name (e.g. House installments)',
                 ),
               ),
             ),
@@ -144,17 +163,19 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
                 _AmountField(
                   controller: _target,
                   symbol: symbol,
-                  label: 'Target (total)',
+                  label: isDeposit ? 'Deposit amount' : 'Target (total)',
                   hint: 'Optional',
                 ),
                 const Divider(height: 1, indent: AppSpacing.md),
-                _AmountField(
-                  controller: _installment,
-                  symbol: symbol,
-                  label: 'Per month',
-                  hint: 'Optional · for "months left"',
-                ),
-                const Divider(height: 1, indent: AppSpacing.md),
+                if (!isDeposit) ...<Widget>[
+                  _AmountField(
+                    controller: _installment,
+                    symbol: symbol,
+                    label: 'Per month',
+                    hint: 'Optional · for "months left"',
+                  ),
+                  const Divider(height: 1, indent: AppSpacing.md),
+                ],
                 ListTile(
                   leading: const Icon(Icons.payments_outlined),
                   title: const Text('Currency'),
@@ -175,12 +196,32 @@ class _PlanEditorPageState extends State<PlanEditorPage> {
               children: <Widget>[
                 ListTile(
                   leading: const Icon(Icons.event_outlined),
-                  title: const Text('Start date'),
+                  title: Text(isDeposit ? 'Given on' : 'Start date'),
                   subtitle: Text(DateFormatter.fullDate(_startDate)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _pickStart,
                 ),
                 const Divider(height: 1, indent: AppSpacing.md),
+                if (isDeposit) ...<Widget>[
+                  ListTile(
+                    leading: const Icon(Icons.event_repeat_outlined),
+                    title: const Text('Expected back'),
+                    subtitle: Text(
+                      _dueDate == null
+                          ? 'Optional · when the deposit is due back'
+                          : DateFormatter.fullDate(_dueDate!),
+                    ),
+                    trailing: _dueDate == null
+                        ? const Icon(Icons.chevron_right)
+                        : IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Clear date',
+                            onPressed: () => setState(() => _dueDate = null),
+                          ),
+                    onTap: _pickDueDate,
+                  ),
+                  const Divider(height: 1, indent: AppSpacing.md),
+                ],
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: AppSpacing.md),

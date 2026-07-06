@@ -30,6 +30,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Home-screen widget: month spend + budget bar (data pushed by the app). -->
+        <receiver
+            android:name=".JebWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/jeb_widget_info" />
+        </receiver>
         <!-- flutter_local_notifications: reschedule the daily reminder on boot. -->
         <receiver
             android:exported="false"

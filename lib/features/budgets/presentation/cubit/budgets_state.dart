@@ -4,6 +4,7 @@ final class BudgetsState extends Equatable {
   const BudgetsState({
     this.isLoading = true,
     this.currency = '',
+    this.month,
     this.categories = const <Category>[],
     this.overallLimit,
     this.categoryLimits = const <String, double>{},
@@ -13,22 +14,34 @@ final class BudgetsState extends Equatable {
 
   final bool isLoading;
   final String currency;
+
+  /// First day of the month the spending figures cover.
+  final DateTime? month;
+
   final List<Category> categories;
   final double? overallLimit;
   final Map<String, double> categoryLimits;
 
-  /// Spend this month per category id (home currency).
+  /// Spend in [month] per category id (home currency).
   final Map<String, double> categorySpent;
 
-  /// Total expense this month (home currency).
+  /// Total expense in [month] (home currency).
   final double totalSpent;
 
   double spentFor(String categoryId) => categorySpent[categoryId] ?? 0;
+
+  bool get isCurrentMonth {
+    final DateTime? m = month;
+    if (m == null) return true;
+    final DateTime now = DateTime.now();
+    return m.year == now.year && m.month == now.month;
+  }
 
   @override
   List<Object?> get props => [
         isLoading,
         currency,
+        month,
         categories,
         overallLimit,
         categoryLimits,

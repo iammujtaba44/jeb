@@ -3,7 +3,7 @@ abstract final class DbConstants {
   const DbConstants._();
 
   static const String databaseName = 'jeb.db';
-  static const int databaseVersion = 9;
+  static const int databaseVersion = 10;
 
   // Tables
   static const String transactionsTable = 'transactions';
@@ -32,6 +32,10 @@ abstract final class DbConstants {
   static const String columnTargetAmount = 'target_amount';
   static const String columnInstallmentAmount = 'installment_amount';
   static const String columnPlanId = 'plan_id';
+
+  /// On a deposit plan: when the money is expected back / was returned.
+  static const String columnDueDate = 'due_date';
+  static const String columnReturnedDate = 'returned_date';
 
   // Recurring-transaction columns (reuses amount/currency/category/type/note)
   static const String columnFrequency = 'frequency';

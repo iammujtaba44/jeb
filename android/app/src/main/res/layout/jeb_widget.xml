@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget: month label, amount spent, budget line + progress. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/jeb_widget_background"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/widget_month"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#CCFFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_spent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#FFFFFFFF"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+    <TextView
+        android:id="@+id/widget_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#CCFFFFFF"
+        android:textSize="12sp"
+        android:maxLines="1" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:progressTint="#FFFFFFFF"
+        android:progressBackgroundTint="#33FFFFFF" />
+
+    <!-- Same bar in warning red; RemoteViews can't retint at runtime on older
+         APIs, so over-budget just swaps which bar is visible. -->
+    <ProgressBar
+        android:id="@+id/widget_progress_over"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="10dp"
+        android:max="100"
+        android:visibility="gone"
+        android:progressTint="#FFFF8C7A"
+        android:progressBackgroundTint="#33FFFFFF" />
+
+    <TextView
+        android:id="@+id/widget_daily"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="#BFFFFFFF"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:visibility="gone" />
+</LinearLayout>

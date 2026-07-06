@@ -2,24 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jeb/core/constants/currencies.dart';
-import 'package:jeb/core/di/injection.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/formatters.dart';
 import 'package:jeb/core/widgets/icon_badge.dart';
 import 'package:jeb/features/budgets/presentation/cubit/budgets_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/presentation/widgets/category_avatar.dart';
+import 'package:jeb/features/transactions/presentation/widgets/month_picker_dialog.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+/// Expects a [BudgetsCubit] above it (provided by the app shell so the
+/// selected month can follow Home and reload on tab change).
 class BudgetsPage extends StatelessWidget {
   const BudgetsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<BudgetsCubit>(
-      create: (_) => getIt<BudgetsCubit>()..load(),
-      child: const BudgetsView(),
-    );
-  }
+  Widget build(BuildContext context) => const BudgetsView();
 }
 
 class BudgetsView extends StatelessWidget {
@@ -28,13 +26,23 @@ class BudgetsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Budgets')),
+      appBar: AppBar(
+        title: const Text('Budgets'),
+        actions: const <Widget>[
+          _BudgetsMonthPill(),
+          SizedBox(width: AppSpacing.sm),
+        ],
+      ),
       body: BlocBuilder<BudgetsCubit, BudgetsState>(
         builder: (BuildContext context, BudgetsState state) {
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           final String currency = state.currency;
+          // "this month" for the current month, "in June 2026" for the rest.
+          final String monthLabel = state.isCurrentMonth || state.month == null
+              ? 'this month'
+              : 'in ${DateFormatter.monthYear(state.month!)}';
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: <Widget>[
@@ -44,6 +52,7 @@ class BudgetsView extends StatelessWidget {
                   limit: state.overallLimit,
                   spent: state.totalSpent,
                   currency: currency,
+                  monthLabel: monthLabel,
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -59,6 +68,7 @@ class BudgetsView extends StatelessWidget {
                         limit: state.categoryLimits[state.categories[i].id],
                         spent: state.spentFor(state.categories[i].id),
                         currency: currency,
+                        monthLabel: monthLabel,
                       ),
                     ],
                   ],
@@ -69,6 +79,68 @@ class BudgetsView extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// App-bar pill showing the month the budget figures cover; tap to jump to
+/// any (non-future) month.
+class _BudgetsMonthPill extends StatelessWidget {
+  const _BudgetsMonthPill();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<BudgetsCubit, BudgetsState>(
+      builder: (BuildContext context, BudgetsState state) {
+        final DateTime month = state.month ??
+            DateTime(DateTime.now().year, DateTime.now().month);
+        final ColorScheme scheme = Theme.of(context).colorScheme;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            onTap: () async {
+              final BudgetsCubit cubit = context.read<BudgetsCubit>();
+              final DateTime? picked = await showDialog<DateTime>(
+                context: context,
+                builder: (_) => MonthPickerDialog(initialMonth: month),
+              );
+              if (picked != null) await cubit.goToMonth(picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 7, 10, 7),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    PhosphorIcons.calendarBlank(PhosphorIconsStyle.bold),
+                    size: 15,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    DateFormatter.monthYear(month),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    PhosphorIcons.caretDown(PhosphorIconsStyle.bold),
+                    size: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -104,11 +176,13 @@ class _OverallBudgetTile extends StatelessWidget {
     required this.limit,
     required this.spent,
     required this.currency,
+    required this.monthLabel,
   });
 
   final double? limit;
   final double spent;
   final String currency;
+  final String monthLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +192,7 @@ class _OverallBudgetTile extends StatelessWidget {
       spent: spent,
       limit: limit,
       currency: currency,
+      monthLabel: monthLabel,
       onTap: () async {
         final double? result = await showBudgetDialog(
           context,
@@ -139,12 +214,14 @@ class _CategoryBudgetTile extends StatelessWidget {
     required this.limit,
     required this.spent,
     required this.currency,
+    required this.monthLabel,
   });
 
   final Category category;
   final double? limit;
   final double spent;
   final String currency;
+  final String monthLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -154,6 +231,7 @@ class _CategoryBudgetTile extends StatelessWidget {
       spent: spent,
       limit: limit,
       currency: currency,
+      monthLabel: monthLabel,
       onTap: () async {
         final double? result = await showBudgetDialog(
           context,
@@ -170,7 +248,7 @@ class _CategoryBudgetTile extends StatelessWidget {
 }
 
 /// A budget list row: shows a progress bar + over/under when a [limit] is set,
-/// or just the amount spent this month when it isn't.
+/// or just the amount spent in the selected month when it isn't.
 class _BudgetRow extends StatelessWidget {
   const _BudgetRow({
     required this.leading,
@@ -178,6 +256,7 @@ class _BudgetRow extends StatelessWidget {
     required this.spent,
     required this.limit,
     required this.currency,
+    required this.monthLabel,
     required this.onTap,
   });
 
@@ -186,6 +265,10 @@ class _BudgetRow extends StatelessWidget {
   final double spent;
   final double? limit;
   final String currency;
+
+  /// "this month" or "in June 2026" — matches the month being viewed.
+  final String monthLabel;
+
   final VoidCallback onTap;
 
   static const Color _amber = Color(0xFFF59E0B);
@@ -265,7 +348,7 @@ class _BudgetRow extends StatelessWidget {
             ] else
               Text(
                 spent > 0
-                    ? 'Spent ${MoneyFormatter.format(spent, currency)} this month · tap to set a budget'
+                    ? 'Spent ${MoneyFormatter.format(spent, currency)} $monthLabel · tap to set a budget'
                     : 'No budget · tap to set one',
                 style: textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
