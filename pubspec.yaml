@@ -1,7 +1,7 @@
 name: jeb
 description: "Jeb — a private, local-first expense tracker."
 publish_to: "none"
-version: 1.0.0+6
+version: 1.0.0+7
 
 homepage: https://www.mujtaba.cc
 repository: https://github.com/iammujtaba44/jeb
@@ -79,6 +79,13 @@ dependencies:
 
   # Home-screen widgets (iOS WidgetKit / Android AppWidget data bridge)
   home_widget: ^0.9.2+1
+
+# phosphor_flutter 2.1.0 (latest, unmaintained) extends IconData, which is a
+# final class in current Flutter. Vendored patched copy (extension types) in
+# third_party/ until an upstream fix ships.
+dependency_overrides:
+  phosphor_flutter:
+    path: third_party/phosphor_flutter
 
 dev_dependencies:
   flutter_test:
