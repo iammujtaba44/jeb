@@ -27,11 +27,25 @@ class GoogleDriveAuth {
     }
   }
 
-  /// Interactive sign-in. Returns the connected account's email, or null if the
-  /// user cancelled.
+  /// Interactive sign-in. Returns the connected account's email, or null if
+  /// the user cancelled or the sign-in failed.
   Future<String?> connect() async {
-    final GoogleSignInAccount? account = await _googleSignIn.signIn();
-    return account?.email;
+    try {
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account != null) return account.email;
+    } catch (_) {
+      // signIn() can throw even when the native flow actually signed the
+      // account in (e.g. the activity was recreated behind the picker).
+      // Fall through and check for a live session before reporting failure.
+    }
+    if (_googleSignIn.currentUser == null) {
+      try {
+        await _googleSignIn.signInSilently();
+      } catch (_) {
+        // Genuinely not signed in.
+      }
+    }
+    return _googleSignIn.currentUser?.email;
   }
 
   /// Revokes access and forgets the account.

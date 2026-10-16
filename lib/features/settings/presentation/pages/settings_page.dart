@@ -542,20 +542,83 @@ class _GoogleDriveTile extends StatefulWidget {
   State<_GoogleDriveTile> createState() => _GoogleDriveTileState();
 }
 
-class _GoogleDriveTileState extends State<_GoogleDriveTile> {
+class _GoogleDriveTileState extends State<_GoogleDriveTile>
+    with WidgetsBindingObserver {
   bool _busy = false;
+
+  /// Set when the lifecycle recovery finished the flow, so a late-completing
+  /// signIn() future doesn't celebrate (and back up) a second time.
+  bool _recovered = false;
 
   GoogleDriveAuth get _auth => getIt<GoogleDriveAuth>();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // The tile can build before the startup session restore completes —
+    // refresh it so a connected account (and its email) shows right away.
+    _auth.restore().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Android can recreate the activity behind the account picker; the plugin
+    // then loses the sign-in callback and connect() never completes, leaving
+    // the spinner running forever even though the account IS signed in. When
+    // the app comes back, give the normal path a moment, then recover.
+    if (state == AppLifecycleState.resumed && _busy) {
+      Future<void>.delayed(const Duration(seconds: 2), _recoverLostSignIn);
+    }
+  }
+
+  Future<void> _recoverLostSignIn() async {
+    if (!mounted || !_busy) return; // the normal path already finished
+    await _auth.restore();
+    if (!mounted || !_busy || !_auth.isConnected) return;
+    _recovered = true;
+    setState(() => _busy = false);
+    _onConnected(_auth.email);
+  }
+
+  void _onConnected(String? email) {
+    AppSnackbar.show(
+      context,
+      email == null ? 'Connected' : 'Connected $email',
+      type: SnackType.success,
+    );
+    // Push an initial backup to the freshly connected Drive.
+    context.read<SettingsCubit>().backupNow();
+  }
+
   Future<void> _connect() async {
     setState(() => _busy = true);
-    final String? email = await _auth.connect();
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (email == null) return; // cancelled
-    AppSnackbar.show(context, 'Connected $email', type: SnackType.success);
-    // Push an initial backup to the freshly connected Drive.
-    await context.read<SettingsCubit>().backupNow();
+    _recovered = false;
+    String? email;
+    try {
+      email = await _auth.connect();
+    } finally {
+      // Whatever happens — success, cancel, or an exception from the sign-in
+      // plugin — the spinner must stop.
+      if (mounted && _busy) setState(() => _busy = false);
+    }
+    if (!mounted || _recovered) return;
+    if (email == null) {
+      AppSnackbar.show(
+        context,
+        'Google sign-in didn\'t complete — try again',
+      );
+      return;
+    }
+    _onConnected(email);
   }
 
   Future<void> _disconnect() async {
@@ -615,7 +678,17 @@ class _SyncToggleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
-    final String cloud = isAndroid ? 'Google Drive' : 'iCloud';
+
+    // Android can name the connected Google account; Apple offers no API to
+    // read the iCloud account's email, so iOS points at the device account.
+    final String? driveEmail =
+        isAndroid ? getIt<GoogleDriveAuth>().email : null;
+    final String destination = isAndroid
+        ? (driveEmail == null
+            ? 'your own Google Drive'
+            : 'Google Drive ($driveEmail)')
+        : 'the iCloud account signed in on this device';
+
     return SwitchListTile(
       value: enabled,
       onChanged: context.read<SettingsCubit>().setSyncEnabled,
@@ -629,7 +702,7 @@ class _SyncToggleTile extends StatelessWidget {
       ),
       subtitle: Text(
         enabled
-            ? 'Backs up privately to your own $cloud.'
+            ? 'Backs up privately to $destination.'
             : 'Off — data stays only on this device.',
       ),
     );

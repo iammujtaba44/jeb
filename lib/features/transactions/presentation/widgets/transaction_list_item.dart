@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jeb/core/theme/app_colors.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/core/widgets/confirm_delete_dialog.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction.dart';
 import 'package:jeb/features/transactions/domain/entities/transaction_type.dart';
@@ -35,6 +36,7 @@ class TransactionListItem extends StatelessWidget {
     return Dismissible(
       key: ValueKey<String>(transaction.id),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => confirmDelete(context),
       onDismissed: (_) => onDelete(transaction.id),
       background: const _DeleteBackground(),
       child: ListTile(

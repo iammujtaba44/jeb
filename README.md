@@ -36,8 +36,8 @@ analytics. It's fast, works offline, and is yours.
 ## Features
 
 **💸 Transactions** — income & expense, custom categories, recurring rules,
-optional receipt photos, full‑text search & filtering, and smart money
-formatting (Lakh/Crore for South‑Asian currencies, K/M/B otherwise).
+optional receipt photos, full‑text search & filtering, swipe‑to‑delete with
+confirmation, and amounts always shown in full with comma grouping.
 
 **👛 Accounts & wallets** — cash, bank, card, and wallet balances with opening
 amounts, a per‑account history, and transfers between accounts (cross‑currency

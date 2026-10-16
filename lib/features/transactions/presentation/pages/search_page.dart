@@ -6,6 +6,7 @@ import 'package:jeb/core/theme/app_colors.dart';
 import 'package:jeb/core/theme/app_spacing.dart';
 import 'package:jeb/core/utils/currency_converter.dart';
 import 'package:jeb/core/utils/formatters.dart';
+import 'package:jeb/core/widgets/confirm_delete_dialog.dart';
 import 'package:jeb/core/widgets/app_snackbar.dart';
 import 'package:jeb/features/settings/presentation/cubit/settings_cubit.dart';
 import 'package:jeb/features/transactions/domain/entities/category.dart';
@@ -240,6 +241,7 @@ class _Results extends StatelessWidget {
                     key: ValueKey<String>(transaction.id),
                     direction: DismissDirection.endToStart,
                     background: const _DeleteBackground(),
+                    confirmDismiss: (_) => confirmDelete(context),
                     onDismissed: (_) => _handleDelete(context, transaction),
                     child: _SearchResultTile(
                       transaction: transaction,
